@@ -86,27 +86,25 @@ export const markMessagesAsRead = async (roomId: string, currentUserId: string):
 };
 
 /* ------------------------------------------------------------------ */
-/* Compatibility exports used by src/context/ChatContext.tsx            */
+/* Exports used by src/context/ChatContext.tsx                          */
 /* ------------------------------------------------------------------ */
 
 export const getOrCreateChatRoom = async (
   currentUserId: string,
   otherUserId: string
-): Promise<{ id: string } & Partial<ChatRoom>> => {
+): Promise<ChatRoom & { id: string }> => {
   const roomId = getRoomId(currentUserId, otherUserId);
 
-  await setDoc(
-    doc(db, "chats", roomId),
-    {
-      participants: [currentUserId, otherUserId],
-      lastMessage: "",
-      lastMessageAt: new Date().toISOString(),
-      lastSenderId: "",
-    },
-    { merge: true }
-  );
+  const room: ChatRoom = {
+    participants: [currentUserId, otherUserId],
+    lastMessage: "",
+    lastMessageAt: new Date().toISOString(),
+    lastSenderId: "",
+  };
 
-  return { id: roomId };
+  await setDoc(doc(db, "chats", roomId), room, { merge: true });
+
+  return { id: roomId, ...room };
 };
 
 export const fetchMessages = async (_roomId: string): Promise<Message[]> => {
@@ -119,8 +117,7 @@ export const editMessage = async (roomId: string, messageId: string, newText: st
 };
 
 export const deleteMessage = async (roomId: string, messageId: string): Promise<void> => {
-  // If you want true deletion, you can use deleteDoc() from firebase/firestore.
-  // This soft-delete avoids changing imports.
+  // Soft-delete (avoid requiring deleteDoc import)
   await updateDoc(doc(db, "chats", roomId, "messages", messageId), { text: "", deleted: true });
 };
 
@@ -128,20 +125,12 @@ export const markMessageAsRead = async (roomId: string, currentUserId: string): 
   await markMessagesAsRead(roomId, currentUserId);
 };
 
-export const muteChat = async (
-  _currentUserId: string,
-  _chatRoomId: string,
-  _mute: boolean
-): Promise<void> => {
-  // No-op until you implement mute state in Firestore
+export const muteChat = async (_currentUserId: string, _chatRoomId: string, _mute: boolean): Promise<void> => {
+  // No-op until implemented in Firestore schema
 };
 
-export const archiveChat = async (
-  _currentUserId: string,
-  _chatRoomId: string,
-  _archive: boolean
-): Promise<void> => {
-  // No-op until you implement archive state in Firestore
+export const archiveChat = async (_currentUserId: string, _chatRoomId: string, _archive: boolean): Promise<void> => {
+  // No-op until implemented in Firestore schema
 };
 
 export const updateChatMetadata = async (
@@ -149,5 +138,5 @@ export const updateChatMetadata = async (
   _chatRoomId: string,
   _metadata: Record<string, unknown>
 ): Promise<void> => {
-  // No-op until you implement metadata in Firestore
+  // No-op until implemented in Firestore schema
 };

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { HiHeart, HiOutlineHeart } from "react-icons/hi";
 import { FiSearch, FiX, FiMapPin, FiBriefcase } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
@@ -11,56 +11,61 @@ const EMPTY_FILTERS: FeedFilters = { district: "", ageRange: "", gender: "" };
 
 const Feed: React.FC = () => {
   const navigate = useNavigate();
-  const { data, isLoading, error } = useGetPostsQuery();
-  const allPosts = data?.data || data || [];
 
-  const [likedPosts,  setLikedPosts]  = useState<Record<string, boolean>>({});
+  // ✅ FIX: your endpoint expects an argument (Vercel error TS2554)
+const { data, isLoading, error } = useGetPostsQuery(undefined);
+
+  // support both shapes: {data:[...]} or [...]
+  const allPosts = (data?.data ?? data ?? []) as any[];
+
+  const [likedPosts, setLikedPosts] = useState<Record<string, boolean>>({});
   const [searchQuery, setSearchQuery] = useState("");
-  const [filters,     setFilters]     = useState<FeedFilters>(EMPTY_FILTERS);
+  const [filters, setFilters] = useState<FeedFilters>(EMPTY_FILTERS);
 
-  const toggleLike = (id: string) =>
-    setLikedPosts((prev) => ({ ...prev, [id]: !prev[id] }));
+  const toggleLike = (id: string) => setLikedPosts((prev) => ({ ...prev, [id]: !prev[id] }));
 
   /* ── Filter logic ── */
   const visiblePosts = allPosts.filter((item: any) => {
     const user = item.user_id;
 
-    // 1. Only Approved posts
+    // 1) Only Approved posts
     if (item.post_status !== "Approve") return false;
 
-    // 2. Search
+    // 2) Search
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       const haystack = [
-        user?.first_name, user?.last_name,
-        user?.occupation,  user?.district,
-        item.education,    item.current_living,
-      ].join(" ").toLowerCase();
+        user?.first_name,
+        user?.last_name,
+        user?.occupation,
+        user?.district,
+        item.education,
+        item.current_living,
+      ]
+        .join(" ")
+        .toLowerCase();
+
       if (!haystack.includes(q)) return false;
     }
 
-    
+    // 3) District filter (match either user's district or post current_living)
     if (filters.district) {
       const userDistrict = user?.district?.toLowerCase() || "";
       const postDistrict = item.current_living?.toLowerCase() || "";
       const filterValue = filters.district.toLowerCase();
-      
-      // Must match either user's district OR post's current_living
-      if (userDistrict !== filterValue && postDistrict !== filterValue) {
-        return false;
-      }
+
+      if (userDistrict !== filterValue && postDistrict !== filterValue) return false;
     }
 
-    // 4. Age — FIX: Use age from backend, handle null/undefined properly
+    // 4) Age filter (only if age exists)
     if (filters.ageRange) {
       const age = user?.age;
-      // Only filter if age exists; if age is null/undefined, don't filter by age
       if (age !== null && age !== undefined) {
         if (!ageInRange(age, filters.ageRange)) return false;
       }
     }
 
-    // 5. Gender
+    // 5) Gender filter
     if (filters.gender) {
       if (user?.gender?.toLowerCase() !== filters.gender.toLowerCase()) return false;
     }
@@ -69,7 +74,7 @@ const Feed: React.FC = () => {
   });
 
   const hasActiveFilters =
-    searchQuery.trim() || filters.district || filters.ageRange || filters.gender;
+    !!searchQuery.trim() || !!filters.district || !!filters.ageRange || !!filters.gender;
 
   /* ── Loading ── */
   if (isLoading) {
@@ -96,10 +101,8 @@ const Feed: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#faf8ff] pb-28">
-
       {/* ── Sticky top bar ── */}
       <div className="sticky top-0 z-20 flex flex-col">
-
         {/* Search bar */}
         <div className="bg-white border-b border-gray-100 shadow-sm">
           <div className="max-w-2xl mx-auto px-4 sm:px-5 py-3">
@@ -133,19 +136,16 @@ const Feed: React.FC = () => {
         </div>
 
         {/* Filter bar */}
-        <FeedFilter
-          filters={filters}
-          onChange={setFilters}
-          totalVisible={visiblePosts.length}
-        />
+        <FeedFilter filters={filters} onChange={setFilters} totalVisible={visiblePosts.length} />
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 mt-8">
-
         {/* Section header */}
         <div className="flex items-center gap-3 mb-8">
-          <h2 className="text-lg font-bold bg-gradient-to-r from-rose-500 via-fuchsia-500 to-violet-500
-            bg-clip-text text-transparent tracking-tight">
+          <h2
+            className="text-lg font-bold bg-gradient-to-r from-rose-500 via-fuchsia-500 to-violet-500
+            bg-clip-text text-transparent tracking-tight"
+          >
             Discover
           </h2>
           <div className="flex-1 h-px bg-gradient-to-r from-fuchsia-200 to-transparent" />
@@ -157,14 +157,19 @@ const Feed: React.FC = () => {
         {/* Empty state */}
         {visiblePosts.length === 0 && (
           <div className="flex flex-col items-center justify-center py-24 gap-4">
-            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-fuchsia-100 to-violet-100
-              flex items-center justify-center">
+            <div
+              className="w-16 h-16 rounded-full bg-gradient-to-br from-fuchsia-100 to-violet-100
+              flex items-center justify-center"
+            >
               <FiSearch className="text-violet-300" size={28} />
             </div>
             <p className="text-sm text-gray-400 font-medium">No profiles match your filters.</p>
             {hasActiveFilters && (
               <button
-                onClick={() => { setFilters(EMPTY_FILTERS); setSearchQuery(""); }}
+                onClick={() => {
+                  setFilters(EMPTY_FILTERS);
+                  setSearchQuery("");
+                }}
                 className="text-xs text-fuchsia-400 hover:text-fuchsia-600 underline transition-colors"
               >
                 Clear all filters
@@ -176,13 +181,11 @@ const Feed: React.FC = () => {
         {/* ── Cards grid ── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {visiblePosts.map((item: any) => {
-            const user  = item.user_id;
+            const user = item.user_id;
             const liked = likedPosts[item._id];
 
-            // ✅ FIX: Age comes directly from backend JSON — safely handle null/undefined
             const age = user?.age ?? null;
 
-            // ✅ FIX: Format dateOfBirth nicely for display
             const dob = user?.dateOfBirth
               ? new Date(user.dateOfBirth).toLocaleDateString("en-US", {
                   year: "numeric",
@@ -207,64 +210,56 @@ const Feed: React.FC = () => {
                     className="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-500"
                   />
 
-                  {/* Gradient overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
 
-                  {/* Marriage status pill — top left */}
                   <div className="absolute top-3 left-3">
-                    <span className="px-2.5 py-1 rounded-full text-[10px] font-semibold tracking-wide
-                      bg-white/20 backdrop-blur-sm border border-white/30 text-white">
+                    <span
+                      className="px-2.5 py-1 rounded-full text-[10px] font-semibold tracking-wide
+                      bg-white/20 backdrop-blur-sm border border-white/30 text-white"
+                    >
                       {user?.marriage_status || "—"}
                     </span>
                   </div>
 
-                  {/* Like button — top right */}
                   <button
-                    onClick={(e) => { e.stopPropagation(); toggleLike(item._id); }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleLike(item._id);
+                    }}
                     className={`absolute top-3 right-3 p-2 rounded-full backdrop-blur-sm border
                       transition-all duration-300
-                      ${liked
-                        ? "bg-rose-500 border-rose-400 shadow-lg shadow-rose-400/40"
-                        : "bg-white/20 border-white/30 hover:bg-white/35"
+                      ${
+                        liked
+                          ? "bg-rose-500 border-rose-400 shadow-lg shadow-rose-400/40"
+                          : "bg-white/20 border-white/30 hover:bg-white/35"
                       }`}
                   >
-                    {liked
-                      ? <HiHeart className="text-white" size={16} />
-                      : <HiOutlineHeart className="text-white" size={16} />
-                    }
+                    {liked ? (
+                      <HiHeart className="text-white" size={16} />
+                    ) : (
+                      <HiOutlineHeart className="text-white" size={16} />
+                    )}
                   </button>
 
-                  {/* ── Bottom overlay: name, age, DOB, location ── */}
                   <div className="absolute bottom-0 left-0 right-0 px-4 pb-4 pt-10">
-
-                    {/* Name + age */}
                     <h2 className="text-white font-bold text-xl leading-tight drop-shadow-sm">
                       {user?.first_name} {user?.last_name}
-                      {age !== null && (
-                        <span className="font-normal text-white/80">, {age}</span>
-                      )}
+                      {age !== null && <span className="font-normal text-white/80">, {age}</span>}
                     </h2>
 
-                    {/* Date of Birth */}
                     {dob && (
-                      <p className="text-white/60 text-[11px] mt-0.5 drop-shadow-sm">
-                        Born {dob}
-                      </p>
+                      <p className="text-white/60 text-[11px] mt-0.5 drop-shadow-sm">Born {dob}</p>
                     )}
 
-                    {/* Location */}
                     <div className="flex items-center gap-1 mt-1 text-white/75 text-xs drop-shadow-sm">
                       <FiMapPin size={10} />
                       <span>{user?.district || item.current_living || "—"}</span>
                     </div>
-
                   </div>
                 </div>
 
                 {/* ── Card footer ── */}
                 <div className="px-4 py-3 flex items-center justify-between">
-
-                  {/* Avatar + name + occupation */}
                   <div className="flex items-center gap-2.5">
                     <div className="p-[1.5px] rounded-full bg-gradient-to-br from-fuchsia-400 to-violet-500 shrink-0">
                       {user?.ProfilePicture ? (
@@ -281,6 +276,7 @@ const Feed: React.FC = () => {
                         </div>
                       )}
                     </div>
+
                     <div>
                       <p className="text-xs font-semibold text-gray-800 leading-tight">
                         {user?.first_name} {user?.last_name}
@@ -292,21 +288,19 @@ const Feed: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Age badge */}
                   {age !== null && (
-                    <span className="text-[10px] font-bold px-2.5 py-1 rounded-full
-                      bg-gradient-to-r from-fuchsia-500 to-violet-500 text-white shadow-sm shrink-0">
+                    <span
+                      className="text-[10px] font-bold px-2.5 py-1 rounded-full
+                      bg-gradient-to-r from-fuchsia-500 to-violet-500 text-white shadow-sm shrink-0"
+                    >
                       {age} yrs
                     </span>
                   )}
-
                 </div>
-
               </div>
             );
           })}
         </div>
-
       </div>
     </div>
   );
