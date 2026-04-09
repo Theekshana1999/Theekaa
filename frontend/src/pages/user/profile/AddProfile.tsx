@@ -7,7 +7,7 @@ import { useUploadProfileImageMutation } from "../../../redux/image/imageAPI";
 import DateOfBirthPicker from "./DateOfBirthPicker";
 
 interface UploadImageResponse {
-  imageUrl: string;
+  url: string;
 }
 
 const SL_DISTRICTS = [
@@ -65,7 +65,7 @@ const AddProfile: React.FC = () => {
         const formData = new FormData();
         formData.append("image", imageFile);
         const uploadRes = await uploadProfileImage(formData).unwrap() as UploadImageResponse;
-        profilePictureUrl = uploadRes.imageUrl;
+        profilePictureUrl = uploadRes.url;
         await addProfilePicture({ profilePictureUrl }).unwrap();
       }
       await updateProfile({
