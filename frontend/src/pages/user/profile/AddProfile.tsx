@@ -64,8 +64,8 @@ const AddProfile: React.FC = () => {
       if (imageFile) {
         const formData = new FormData();
         formData.append("image", imageFile);
-        const uploadRes = await uploadProfileImage(formData).unwrap() as UploadImageResponse;
-        profilePictureUrl = uploadRes.imageUrl;
+        const uploadRes = await uploadProfileImage(formData).unwrap();
+        profilePictureUrl = (uploadRes as UploadImageResponse).imageUrl;
         await addProfilePicture({ profilePictureUrl }).unwrap();
       }
       await updateProfile({

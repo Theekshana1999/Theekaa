@@ -92,8 +92,8 @@ const AddPost: React.FC = () => {
         const file = dataUrlToFile(croppedPreview, "post-image.jpg");
         const formData = new FormData();
         formData.append("image", file);
-        const res = await uploadPostImage(formData).unwrap() as UploadImageResponse;
-        postImageUrl = res.imageUrl;
+        const res = await uploadPostImage(formData).unwrap();
+        postImageUrl = (res as UploadImageResponse).imageUrl;
       }
 
       await createPost({

@@ -92,7 +92,6 @@ export const router = createBrowserRouter([
           </ProtectedUserRoute>
         ) 
       },
-      ,
       {
         path: "contact-admin",
         element: (
@@ -148,7 +147,7 @@ export const router = createBrowserRouter([
     element: <AdminForgotPassword /> 
   },
   { 
-    path: "/2", 
+    path: "*", 
     element: <NotFound /> 
   },
 ]);

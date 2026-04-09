@@ -2,7 +2,6 @@ import { createContext, useCallback, useContext, useRef, useState } from "react"
 import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
 
 import { db } from "../firebase/firebaseConfig";
-
 import {
   getOrCreateChatRoom,
   sendMessage as sendMessageService,
@@ -14,7 +13,24 @@ import {
   updateChatMetadata,
 } from "../services/firebase/chatService";
 
-import type { IChatRoom, IChatMessage, IChatContextType } from "../types/chat.types";
+import type { IChatRoom, IChatMessage } from "../types/chat.types";
+
+// Define the context type locally or import from types
+export interface IChatContextType {
+  currentChatRoom: IChatRoom | null;
+  messages: IChatMessage[];
+  loading: boolean;
+  error: string | null;
+  openChat: (otherUserId: string) => Promise<void>;
+  sendMessage: (content: string, images?: File[]) => Promise<void>;
+  editMessage: (messageId: string, newContent: string) => Promise<void>;
+  deleteMessage: (messageId: string) => Promise<void>;
+  markAsRead: (messageId: string) => Promise<void>;
+  muteChat: (chatRoomId: string) => Promise<void>;
+  unmuteChat: (chatRoomId: string) => Promise<void>;
+  archiveChat: (chatRoomId: string) => Promise<void>;
+  unarchiveChat: (chatRoomId: string) => Promise<void>;
+}
 
 const ChatContext = createContext<IChatContextType | undefined>(undefined);
 
@@ -29,10 +45,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const unsubscribeRef = useRef<(() => void) | null>(null);
 
-  // TODO: Replace these with real auth values (from Redux/Firebase auth/etc.)
+  // TODO: Replace with real auth value (Redux/Firebase Auth/etc.)
   const currentUserId = "";
-  const currentUserName = "";
-  const currentUserProfilePic = "";
 
   const openChat = useCallback(
     async (otherUserId: string) => {
@@ -42,14 +56,14 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         setActiveOtherUserId(otherUserId);
 
-        // Ensure room exists + get room id
+        // Ensure room exists + get room (includes id)
         const chatRoom = await getOrCreateChatRoom(currentUserId, otherUserId);
         setCurrentChatRoom(chatRoom);
 
         // Stop previous listener
         if (unsubscribeRef.current) unsubscribeRef.current();
 
-        // Listen to messages under: chats/{roomId}/messages  (matches your chatService.ts)
+        // Listen to messages under: chats/{roomId}/messages
         const msgsQuery = query(
           collection(db, "chats", chatRoom.id, "messages"),
           orderBy("createdAt", "asc")
@@ -68,7 +82,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setMessages(fetched);
         });
 
-        // (Optional) update metadata - currently a no-op wrapper in chatService.ts
+        // optional metadata (currently no-op in service until you implement it)
         await updateChatMetadata(currentUserId, chatRoom.id, {
           unreadCount: 0,
           lastReadTime: new Date(),
@@ -98,7 +112,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setError(null);
 
       try {
-        // IMPORTANT: your chatService sendMessage signature is (roomId, senderId, receiverId, text)
+        // sendMessage(roomId, senderId, receiverId, text)
         await sendMessageService(currentChatRoom.id, currentUserId, activeOtherUserId, content);
       } catch (err) {
         console.error("Error sending message:", err);
@@ -144,7 +158,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     async (_messageId: string) => {
       if (!currentChatRoom) return;
       try {
-        // Your service marks messages in the room for the current user
         await markMessageAsReadService(currentChatRoom.id, currentUserId);
       } catch (err) {
         console.error("Error marking as read:", err);

@@ -87,8 +87,8 @@ const UpdateProfile = () => {
       if (imageFile) {
         const formData = new FormData();
         formData.append("image", imageFile);
-        const uploadRes = await uploadProfileImage(formData).unwrap() as UploadResponse;
-        await updateProfilePicture({ profilePictureUrl: uploadRes.imageUrl }).unwrap();
+        const uploadRes = await uploadProfileImage(formData).unwrap();
+        await updateProfilePicture({ profilePictureUrl: (uploadRes as UploadResponse).imageUrl }).unwrap();
       }
       await updateProfile({
         id: userId,
