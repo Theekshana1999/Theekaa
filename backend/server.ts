@@ -23,7 +23,7 @@ app.use(cookieParser());
 
 app.use(
   cors({
-    origin: "*", // 🔥 change for production (or your frontend URL)
+    origin: "https://theekaa-ahb3-jirl7dpsg-sihina-nimnadas-projects-b21c3852.vercel.app/", // 🔥 change for production (or your frontend URL)
     credentials: true,
   })
 );
