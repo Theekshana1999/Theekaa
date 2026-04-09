@@ -10,7 +10,7 @@ import type { RootState } from "../../../redux/store";
 import DateOfBirthPicker from "./DateOfBirthPicker";
 
 interface UploadResponse {
-  imageUrl: string;
+  url: string;
 }
 
 const SL_DISTRICTS = [
@@ -88,7 +88,7 @@ const UpdateProfile = () => {
         const formData = new FormData();
         formData.append("image", imageFile);
         const uploadRes = await uploadProfileImage(formData).unwrap() as UploadResponse;
-        await updateProfilePicture({ profilePictureUrl: uploadRes.imageUrl }).unwrap();
+        await updateProfilePicture({ profilePictureUrl: uploadRes.url }).unwrap();
       }
       await updateProfile({
         id: userId,

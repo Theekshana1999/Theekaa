@@ -9,14 +9,7 @@ import ImageCropper from "./ImageCropper";
 import PostErrorBanner from "./PostErrorBanner";
 
 interface UploadImageResponse {
-  imageUrl: string;
-}
-
-interface UpdatePostPayload {
-  other_details: string;
-  current_living: string;
-  education: string;
-  image?: string | null;
+  url: string;
 }
 
 const extractErrorMessage = (err: unknown): string => {
@@ -139,7 +132,7 @@ const UpdatePost: React.FC = () => {
         const formData = new FormData();
         formData.append("image", file);
         const res = await uploadPostImage(formData).unwrap() as UploadImageResponse;
-        postImageUrl = res.imageUrl;
+        postImageUrl = res.url;
       } else if (currentImageUrl === null && postData?.image) {
         // User removed the image
         postImageUrl = null;

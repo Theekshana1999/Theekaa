@@ -31,8 +31,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // TODO: Replace these with real auth values (from Redux/Firebase auth/etc.)
   const currentUserId = "";
-  const currentUserName = "";
-  const currentUserProfilePic = "";
 
   const openChat = useCallback(
     async (otherUserId: string) => {
