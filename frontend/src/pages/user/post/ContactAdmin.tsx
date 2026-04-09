@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { CheckCircle, MessageCircle, Copy, Check, ExternalLink, Info } from "lucide-react";
+import { CheckCircle, Copy, Check, ExternalLink, Info } from "lucide-react";
 
 const ADMIN_PHONE = "94766500567"; // no + for wa.me link
 const ADMIN_DISPLAY = "+94 76 650 0567";

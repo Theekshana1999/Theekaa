@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   useGetAllUserQuery,
   useDeleteUserByIdMutation,
 } from "../../../redux/userAuth/userAuthAPI";
 import "remixicon/fonts/remixicon.css";
-import UserTableRow, { User } from "./UserTableRow";
+import UserTableRow from "./UserTableRow";
+import type { User } from "./UserTableRow";
 import ConfirmModal from "./ConfirmModal";
 
 const GRADIENT = "bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500";

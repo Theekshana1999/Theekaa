@@ -8,7 +8,7 @@ import {
   markMessagesAsRead,
   getRoomId,
 } from "../../../services/firebase/chatService";
-import { Message } from "../../../types/chat.types";
+import type { Message } from "../../../types/chat.types";
 import { getBaseURL } from "../../../utils/baseURL";
 
 const MessageTick: React.FC<{ status: Message["status"]; isMe: boolean }> = ({ status, isMe }) => {

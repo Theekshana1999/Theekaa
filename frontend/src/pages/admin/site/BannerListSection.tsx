@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useGetBannersQuery, useDeleteBannerMutation } from "../../../redux/image/imageAPI";
-import { Banner, BannerType, BANNER_TYPE_CONFIG } from "./bannerListTypes";
+import { BANNER_TYPE_CONFIG } from "./bannerListTypes";
+import type { Banner, BannerType } from "./bannerListTypes";
 import "remixicon/fonts/remixicon.css";
 
 const GRADIENT      = "bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500";

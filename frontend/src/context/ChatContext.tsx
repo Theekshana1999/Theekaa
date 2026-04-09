@@ -1,40 +1,38 @@
-// context/ChatContext.tsx
-import React, { createContext, useContext, useState, useCallback, useRef } from "react";
+import { createContext, useCallback, useContext, useRef, useState } from "react";
+import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
+
+import { db } from "../firebase/firebaseConfig";
+
 import {
   getOrCreateChatRoom,
-  sendMessage,
-  fetchMessages,
-  editMessage,
-  deleteMessage,
-  markMessageAsRead,
-  muteChat,
-  archiveChat,
+  sendMessage as sendMessageService,
+  editMessage as editMessageService,
+  deleteMessage as deleteMessageService,
+  markMessageAsRead as markMessageAsReadService,
+  muteChat as muteChatService,
+  archiveChat as archiveChatService,
   updateChatMetadata,
 } from "../services/firebase/chatService";
-import {
-  IChatRoom,
-  IChatMessage,
-  IChatContextType,
-} from "../types/chat.types";
-import { collection, onSnapshot, query, where } from "firebase/firestore";
-import { db } from "../firebase/firebaseConfig";
+
+import type { IChatRoom, IChatMessage, IChatContextType } from "../types/chat.types";
 
 const ChatContext = createContext<IChatContextType | undefined>(undefined);
 
-export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
+export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentChatRoom, setCurrentChatRoom] = useState<IChatRoom | null>(null);
   const [messages, setMessages] = useState<IChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // track the user you're chatting with (needed because sendMessage needs receiverId)
+  const [activeOtherUserId, setActiveOtherUserId] = useState<string>("");
+
   const unsubscribeRef = useRef<(() => void) | null>(null);
 
-
+  // TODO: Replace these with real auth values (from Redux/Firebase auth/etc.)
   const currentUserId = "";
-  const currentUserName = ""; 
-  const currentUserProfilePic = ""; 
-
+  const currentUserName = "";
+  const currentUserProfilePic = "";
 
   const openChat = useCallback(
     async (otherUserId: string) => {
@@ -42,40 +40,35 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
       setError(null);
 
       try {
-       
+        setActiveOtherUserId(otherUserId);
+
+        // Ensure room exists + get room id
         const chatRoom = await getOrCreateChatRoom(currentUserId, otherUserId);
         setCurrentChatRoom(chatRoom);
 
-        
-        if (unsubscribeRef.current) {
-          unsubscribeRef.current();
-        }
+        // Stop previous listener
+        if (unsubscribeRef.current) unsubscribeRef.current();
 
-      
-        const messagesRef = collection(db, "messages");
-        const q = query(
-          messagesRef,
-          where("chatRoomId", "==", chatRoom.id)
+        // Listen to messages under: chats/{roomId}/messages  (matches your chatService.ts)
+        const msgsQuery = query(
+          collection(db, "chats", chatRoom.id, "messages"),
+          orderBy("createdAt", "asc")
         );
 
-        unsubscribeRef.current = onSnapshot(q, (snapshot) => {
-          const fetchedMessages = snapshot.docs
-            .map((doc) => ({
-              id: doc.id,
-              ...doc.data(),
-              createdAt: doc.data().createdAt?.toDate?.() || new Date(),
-              updatedAt: doc.data().updatedAt?.toDate?.() || new Date(),
-            }))
-            .sort(
-              (a, b) =>
-                new Date(b.createdAt).getTime() -
-                new Date(a.createdAt).getTime()
-            ) as IChatMessage[];
+        unsubscribeRef.current = onSnapshot(msgsQuery, (snapshot) => {
+          const fetched = snapshot.docs.map((d) => {
+            const data = d.data() as any;
+            return {
+              id: d.id,
+              ...data,
+              createdAt: data?.createdAt?.toDate?.() ?? new Date(),
+            } as IChatMessage;
+          });
 
-          setMessages(fetchedMessages);
+          setMessages(fetched);
         });
 
-        // Mark all messages as read
+        // (Optional) update metadata - currently a no-op wrapper in chatService.ts
         await updateChatMetadata(currentUserId, chatRoom.id, {
           unreadCount: 0,
           lastReadTime: new Date(),
@@ -90,13 +83,14 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
     [currentUserId]
   );
 
-  /**
-   * SEND MESSAGE
-   */
   const sendChatMessage = useCallback(
-    async (content: string, images?: File[]) => {
+    async (content: string, _images?: File[]) => {
       if (!currentChatRoom) {
         setError("No chat room selected");
+        return;
+      }
+      if (!activeOtherUserId) {
+        setError("No receiver selected");
         return;
       }
 
@@ -104,14 +98,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
       setError(null);
 
       try {
-        await sendMessage(
-          currentChatRoom.id,
-          currentUserId,
-          currentUserName,
-          currentUserProfilePic,
-          content,
-          images
-        );
+        // IMPORTANT: your chatService sendMessage signature is (roomId, senderId, receiverId, text)
+        await sendMessageService(currentChatRoom.id, currentUserId, activeOtherUserId, content);
       } catch (err) {
         console.error("Error sending message:", err);
         setError(err instanceof Error ? err.message : "Failed to send message");
@@ -119,98 +107,99 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
         setLoading(false);
       }
     },
-    [currentChatRoom, currentUserId, currentUserName, currentUserProfilePic]
+    [currentChatRoom, currentUserId, activeOtherUserId]
   );
 
-  /**
-   * EDIT MESSAGE
-   */
-  const editChatMessage = useCallback(async (messageId: string, newContent: string) => {
-    setError(null);
+  const editChatMessage = useCallback(
+    async (messageId: string, newContent: string) => {
+      if (!currentChatRoom) return;
+      setError(null);
 
-    try {
-      await editMessage(messageId, newContent);
-    } catch (err) {
-      console.error("Error editing message:", err);
-      setError(err instanceof Error ? err.message : "Failed to edit message");
-    }
-  }, []);
-
-  /**
-   * DELETE MESSAGE
-   */
-  const deleteChatMessage = useCallback(async (messageId: string) => {
-    setError(null);
-
-    try {
-      const message = messages.find((m) => m.id === messageId);
-      if (message) {
-        await deleteMessage(messageId, message.images);
+      try {
+        await editMessageService(currentChatRoom.id, messageId, newContent);
+      } catch (err) {
+        console.error("Error editing message:", err);
+        setError(err instanceof Error ? err.message : "Failed to edit message");
       }
-    } catch (err) {
-      console.error("Error deleting message:", err);
-      setError(err instanceof Error ? err.message : "Failed to delete message");
-    }
-  }, [messages]);
+    },
+    [currentChatRoom]
+  );
 
-  /**
-   * MARK AS READ
-   */
-  const markAsRead = useCallback(async (messageId: string) => {
-    try {
-      await markMessageAsRead(messageId);
-    } catch (err) {
-      console.error("Error marking as read:", err);
-    }
-  }, []);
+  const deleteChatMessage = useCallback(
+    async (messageId: string) => {
+      if (!currentChatRoom) return;
+      setError(null);
 
-  /**
-   * MUTE CHAT
-   */
-  const muteChatRoom = useCallback(async (chatRoomId: string) => {
-    try {
-      await muteChat(currentUserId, chatRoomId, true);
-    } catch (err) {
-      console.error("Error muting chat:", err);
-      setError(err instanceof Error ? err.message : "Failed to mute chat");
-    }
-  }, [currentUserId]);
+      try {
+        await deleteMessageService(currentChatRoom.id, messageId);
+      } catch (err) {
+        console.error("Error deleting message:", err);
+        setError(err instanceof Error ? err.message : "Failed to delete message");
+      }
+    },
+    [currentChatRoom]
+  );
 
-  /**
-   * UNMUTE CHAT
-   */
-  const unmuteChatRoom = useCallback(async (chatRoomId: string) => {
-    try {
-      await muteChat(currentUserId, chatRoomId, false);
-    } catch (err) {
-      console.error("Error unmuting chat:", err);
-      setError(err instanceof Error ? err.message : "Failed to unmute chat");
-    }
-  }, [currentUserId]);
+  const markAsRead = useCallback(
+    async (_messageId: string) => {
+      if (!currentChatRoom) return;
+      try {
+        // Your service marks messages in the room for the current user
+        await markMessageAsReadService(currentChatRoom.id, currentUserId);
+      } catch (err) {
+        console.error("Error marking as read:", err);
+      }
+    },
+    [currentChatRoom, currentUserId]
+  );
 
-  /**
-   * ARCHIVE CHAT
-   */
-  const archiveChatRoom = useCallback(async (chatRoomId: string) => {
-    try {
-      await archiveChat(currentUserId, chatRoomId, true);
-    } catch (err) {
-      console.error("Error archiving chat:", err);
-      setError(err instanceof Error ? err.message : "Failed to archive chat");
-    }
-  }, [currentUserId]);
+  const muteChatRoom = useCallback(
+    async (chatRoomId: string) => {
+      try {
+        await muteChatService(currentUserId, chatRoomId, true);
+      } catch (err) {
+        console.error("Error muting chat:", err);
+        setError(err instanceof Error ? err.message : "Failed to mute chat");
+      }
+    },
+    [currentUserId]
+  );
 
-  /**
-   * UNARCHIVE CHAT
-   */
-  const unarchiveChatRoom = useCallback(async (chatRoomId: string) => {
-    try {
-      await archiveChat(currentUserId, chatRoomId, false);
-    } catch (err) {
-      console.error("Error unarchiving chat:", err);
-      setError(err instanceof Error ? err.message : "Failed to unarchive chat");
-    }
-  }, [currentUserId]);
+  const unmuteChatRoom = useCallback(
+    async (chatRoomId: string) => {
+      try {
+        await muteChatService(currentUserId, chatRoomId, false);
+      } catch (err) {
+        console.error("Error unmuting chat:", err);
+        setError(err instanceof Error ? err.message : "Failed to unmute chat");
+      }
+    },
+    [currentUserId]
+  );
+
+  const archiveChatRoom = useCallback(
+    async (chatRoomId: string) => {
+      try {
+        await archiveChatService(currentUserId, chatRoomId, true);
+      } catch (err) {
+        console.error("Error archiving chat:", err);
+        setError(err instanceof Error ? err.message : "Failed to archive chat");
+      }
+    },
+    [currentUserId]
+  );
+
+  const unarchiveChatRoom = useCallback(
+    async (chatRoomId: string) => {
+      try {
+        await archiveChatService(currentUserId, chatRoomId, false);
+      } catch (err) {
+        console.error("Error unarchiving chat:", err);
+        setError(err instanceof Error ? err.message : "Failed to unarchive chat");
+      }
+    },
+    [currentUserId]
+  );
 
   const value: IChatContextType = {
     currentChatRoom,
@@ -228,17 +217,12 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
     unarchiveChat: unarchiveChatRoom,
   };
 
-  return (
-    <ChatContext.Provider value={value}>{children}</ChatContext.Provider>
-  );
+  return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;
 };
-
 
 export const useChat = (): IChatContextType => {
   const context = useContext(ChatContext);
-  if (!context) {
-    throw new Error("useChat must be used within ChatProvider");
-  }
+  if (!context) throw new Error("useChat must be used within ChatProvider");
   return context;
 };
 

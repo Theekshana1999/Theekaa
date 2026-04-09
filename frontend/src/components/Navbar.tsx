@@ -1,15 +1,9 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { NavLink } from "react-router-dom";
-import {
-  HiUserCircle,
-  HiHeart,
-  HiPlusCircle,
-  HiChat,
-} from "react-icons/hi";
+import { NavLink, useNavigate } from "react-router-dom";
+import { HiUserCircle, HiHeart, HiPlusCircle, HiChat } from "react-icons/hi";
 import { IoIosHome } from "react-icons/io";
-import { IconType } from "react-icons";
-import { useNavigate } from "react-router-dom";
+import type { IconType } from "react-icons"
 type NavLinkItem = {
   name: string;
   icon: IconType;

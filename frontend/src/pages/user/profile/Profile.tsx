@@ -52,7 +52,7 @@ const Profile: React.FC = () => {
     </div>
   );
 
-  const activeTabData = tabs.find((t) => t.id === activeTab)!;
+  
 
   return (
 

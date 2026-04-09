@@ -6,7 +6,7 @@ import {
   useUpdateProfilePictureMutation,
 } from "../../../redux/userAuth/userAuthAPI";
 import { useUploadProfileImageMutation } from "../../../redux/image/imageAPI";
-import { RootState } from "../../../redux/store";
+import type { RootState } from "../../../redux/store";
 import DateOfBirthPicker from "./DateOfBirthPicker";
 
 interface UploadResponse {

@@ -1,5 +1,6 @@
 import React from "react";
-import { Post, PostStatus, STATUS_CONFIG, GRADIENT, GRADIENT_TEXT, userName } from "./postTypes";
+import { STATUS_CONFIG, GRADIENT, GRADIENT_TEXT, userName } from "./postTypes";
+import type { Post, PostStatus } from "./postTypes";
 
 interface PostCardProps {
   post: Post;

@@ -5,7 +5,8 @@ import {
   useGetAllDeleteRequestedPostsQuery,
   useDeletePostMutation,
 } from "../../../redux/post/postAPI";
-import { Post, PostStatus, TabView, GRADIENT, GRADIENT_TEXT } from "./postTypes";
+import { GRADIENT, GRADIENT_TEXT } from "./postTypes";
+import type { Post, PostStatus, TabView } from "./postTypes";
 import PostCard from "./PostCard";
 import PostsFilterBar from "./PostsFilterBar";
 import DeleteConfirmModal from "./DeleteConfirmModal";

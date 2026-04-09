@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { UploadImageResponse, CreateBannerPayload } from "./bannerTheme";
+import type { UploadImageResponse, CreateBannerPayload } from "./bannerTheme";
 
 type UploadFn = (formData: FormData) => { unwrap: () => Promise<UploadImageResponse> };
 type SubmitFn = (payload: CreateBannerPayload) => { unwrap: () => Promise<any> };

@@ -14,11 +14,11 @@ export const postLikeAPI = createApi({
                 url: `/like/${postId}`,
                 method: "POST",
             }),
-            invalidatesTags: (result, error, postId) => [{ type: "PostLikes", id: postId }],
+            invalidatesTags: ( postId) => [{ type: "PostLikes", id: postId }],
         }),
         getPostLikes: builder.query({
             query: (postId) => `/likes/${postId}`,
-            providesTags: (result, error, postId) => [{ type: "PostLikes", id: postId }],
+            providesTags: ( postId) => [{ type: "PostLikes", id: postId }],
         }),
     }),
 });

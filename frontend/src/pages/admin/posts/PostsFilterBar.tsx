@@ -1,5 +1,6 @@
 import React from "react";
-import { TabView, PostStatus, GRADIENT } from "./postTypes";
+import { GRADIENT } from "./postTypes";
+import type { TabView, PostStatus } from "./postTypes";
 
 interface PostsFilterBarProps {
   tabView: TabView;

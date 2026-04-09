@@ -3,7 +3,8 @@ import { HiHeart, HiOutlineHeart } from "react-icons/hi";
 import { FiSearch, FiX, FiMapPin, FiBriefcase } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import { useGetPostsQuery } from "../../redux/post/postAPI";
-import FeedFilter, { FeedFilters } from "./FeedFilter";
+import FeedFilter from "./FeedFilter";
+import type { FeedFilters } from "./FeedFilter";
 import { ageInRange } from "./nicUtils";
 
 const EMPTY_FILTERS: FeedFilters = { district: "", ageRange: "", gender: "" };

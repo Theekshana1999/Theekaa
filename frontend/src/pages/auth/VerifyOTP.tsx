@@ -2,7 +2,6 @@ import React from "react";
 import LoginIMG from "../../assets/Signin.jpg";
 
 const VerifyOTP: React.FC = () => {
-  const [email, setEmail] = React.useState<string>("");
   return (
     <div className="relative min-h-screen flex items-center justify-center px-4 overflow-hidden">
 

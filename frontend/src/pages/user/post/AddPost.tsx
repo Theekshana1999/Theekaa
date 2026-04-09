@@ -7,7 +7,7 @@ import DistrictDropdown from "./DistrictDropdown";
 import ImageCropper from "./ImageCropper";
 import PostErrorBanner from "./PostErrorBanner";
 import { useNavigate } from "react-router-dom";
-import { nav } from "framer-motion/client";
+
 
 interface UploadImageResponse {
   imageUrl: string;

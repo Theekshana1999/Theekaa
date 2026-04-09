@@ -1,4 +1,3 @@
-import React from "react";
 import { GRADIENT, GRADIENT_TEXT } from "./bannerTheme";
 
 export interface BannerCardProps {
@@ -12,24 +11,35 @@ export interface BannerCardProps {
   uploadedUrl: string | null;
   isUploading: boolean;
   isSubmitting: boolean;
-  fileInputRef: React.RefObject<HTMLInputElement>;
+
+  // ✅ allow null (matches useRef<HTMLInputElement | null>(null))
+  fileInputRef: React.RefObject<HTMLInputElement | null>;
+
   handleImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleSubmit: (e: React.FormEvent) => void;
   onRemove: () => void;
 }
 
 const BannerCard: React.FC<BannerCardProps> = ({
-  type, label, icon, accentPill,
-  bannerTitle, setBannerTitle,
-  imagePreview, uploadedUrl,
-  isUploading, isSubmitting,
-  fileInputRef, handleImageChange, handleSubmit, onRemove,
+  type,
+  label,
+  icon,
+  accentPill,
+  bannerTitle,
+  setBannerTitle,
+  imagePreview,
+  uploadedUrl,
+  isUploading,
+  isSubmitting,
+  fileInputRef,
+  handleImageChange,
+  handleSubmit,
+  onRemove,
 }) => {
   const isBusy = isUploading || isSubmitting;
 
   return (
     <div className="bg-white/80 backdrop-blur-xl border border-white/40 rounded-2xl overflow-hidden shadow-md hover:shadow-lg hover:shadow-purple-100/50 transition-shadow flex flex-col">
-
       {/* ── Header ── */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-purple-50">
         <div className="flex items-center gap-3">
@@ -40,10 +50,14 @@ const BannerCard: React.FC<BannerCardProps> = ({
           </div>
           <div>
             <h3 className={`text-sm font-bold ${GRADIENT_TEXT}`}>{label}</h3>
-            <p className="text-[10px] text-gray-400 mt-0.5">Upload image then add a title</p>
+            <p className="text-[10px] text-gray-400 mt-0.5">
+              Upload image then add a title
+            </p>
           </div>
         </div>
-        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold ${accentPill}`}>
+        <span
+          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold ${accentPill}`}
+        >
           <i className={icon} /> {type}
         </span>
       </div>
@@ -60,7 +74,11 @@ const BannerCard: React.FC<BannerCardProps> = ({
 
         {imagePreview ? (
           <div className="relative h-40 rounded-xl overflow-hidden border border-purple-100 bg-gray-50">
-            <img src={imagePreview} alt="preview" className="w-full h-full object-cover" />
+            <img
+              src={imagePreview}
+              alt="preview"
+              className="w-full h-full object-cover"
+            />
             <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
 
             <div className="absolute bottom-2 left-3">
@@ -94,8 +112,12 @@ const BannerCard: React.FC<BannerCardProps> = ({
               </div>
             </div>
             <div className="text-center">
-              <p className="text-xs font-semibold text-purple-400">Click to upload image</p>
-              <p className="text-[10px] text-gray-300 mt-0.5">PNG, JPG, WEBP · max 5 MB</p>
+              <p className="text-xs font-semibold text-purple-400">
+                Click to upload image
+              </p>
+              <p className="text-[10px] text-gray-300 mt-0.5">
+                PNG, JPG, WEBP · max 5 MB
+              </p>
             </div>
           </div>
         )}
@@ -122,7 +144,9 @@ const BannerCard: React.FC<BannerCardProps> = ({
         {uploadedUrl && (
           <div className="flex items-center gap-2 px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-xl">
             <i className="ri-cloud-line text-emerald-400 text-sm shrink-0" />
-            <p className="text-[10px] text-emerald-600 font-mono truncate">{uploadedUrl}</p>
+            <p className="text-[10px] text-emerald-600 font-mono truncate">
+              {uploadedUrl}
+            </p>
           </div>
         )}
 
@@ -132,15 +156,20 @@ const BannerCard: React.FC<BannerCardProps> = ({
           className={`w-full py-2.5 rounded-xl ${GRADIENT} text-white text-xs font-bold shadow-md shadow-purple-200 disabled:opacity-50 flex items-center justify-center gap-2 transition-opacity mt-auto`}
         >
           {isSubmitting ? (
-            <><i className="ri-loader-4-line animate-spin" /> Creating…</>
+            <>
+              <i className="ri-loader-4-line animate-spin" /> Creating…
+            </>
           ) : isUploading ? (
-            <><i className="ri-loader-4-line animate-spin" /> Uploading image…</>
+            <>
+              <i className="ri-loader-4-line animate-spin" /> Uploading image…
+            </>
           ) : (
-            <><i className="ri-add-circle-line" /> Create {label}</>
+            <>
+              <i className="ri-add-circle-line" /> Create {label}
+            </>
           )}
         </button>
       </form>
-
     </div>
   );
 };
