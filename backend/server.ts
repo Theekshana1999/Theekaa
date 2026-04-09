@@ -53,6 +53,17 @@ const connectDB = async () => {
   }
 };
 
+app.get("/", (req, res) => {
+  res.send("Server is running 🚀");
+});
+
+app.get("/api/test", (req, res) => {
+  res.json({
+    success: true,
+    message: "API working ✅",
+  });
+});
+
 // ✅ Vercel handler
 export default async function handler(req: any, res: any) {
   await connectDB();
