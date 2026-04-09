@@ -4,7 +4,6 @@ import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 
-
 // Routes
 import userRoutes from "./src/routes/user.routes";
 import postRoutes from "./src/routes/post.routes";
@@ -13,10 +12,10 @@ import adminRoutes from "./src/routes/admin.routes";
 import imageRoutes from "./src/routes/image.routes";
 import postLikeRoutes from "./src/routes/postLike.routes";
 import messageRoutes from "./src/routes/message.routes";
+
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(express.json());
@@ -24,7 +23,7 @@ app.use(cookieParser());
 
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: "*", // 🔥 change for production (or your frontend URL)
     credentials: true,
   })
 );
@@ -38,20 +37,24 @@ app.use("/api/images", imageRoutes);
 app.use("/api/likes", postLikeRoutes);
 app.use("/api/messages", messageRoutes);
 
-// Connect MongoDB + Start Server
-const startServer = async () => {
+// ✅ MongoDB connection (no listen)
+let isConnected = false;
+
+const connectDB = async () => {
+  if (isConnected) return;
+
   try {
     await mongoose.connect(process.env.MONGO_URI as string);
-    console.log("MongoDB Connected Successfully");
-
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-    });
-
+    isConnected = true;
+    console.log("MongoDB Connected");
   } catch (error) {
-    console.error("MongoDB connection error:", error);
-    process.exit(1);
+    console.error("MongoDB error:", error);
+    throw error;
   }
 };
 
-startServer();
+// ✅ Vercel handler
+export default async function handler(req: any, res: any) {
+  await connectDB();
+  return app(req, res);
+}
