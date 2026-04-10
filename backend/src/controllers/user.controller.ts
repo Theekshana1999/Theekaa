@@ -25,12 +25,12 @@ export const Signup = async (req: AuthRequest, res: Response) => {
     role: "user",
   });
 
-    res.cookie("token", token, {
-    httpOnly: true,
-    sameSite: "strict",
-    secure: false,
-    maxAge: 60 * 60 * 1000,
-  });
+res.cookie("token", token, {
+  httpOnly: true,
+  secure: true,        
+  sameSite: "none",   
+  maxAge: 60 * 60 * 1000,
+});
 
   const { password: pwd, ...userData } = user.toObject();
 
