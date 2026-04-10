@@ -12,6 +12,13 @@ interface UploadImageResponse {
   imageUrl: string;
 }
 
+interface UpdatePostPayload {
+  other_details: string;
+  current_living: string;
+  education: string;
+  image?: string | null;
+}
+
 const extractErrorMessage = (err: unknown): string => {
   if (err && typeof err === "object") {
     const data = (err as any)?.data;
@@ -131,8 +138,8 @@ const UpdatePost: React.FC = () => {
         const file = dataUrlToFile(croppedPreview, "post-image.jpg");
         const formData = new FormData();
         formData.append("image", file);
-        const res = await uploadPostImage(formData).unwrap();
-        postImageUrl = (res as UploadImageResponse).imageUrl;
+        const res = await uploadPostImage(formData).unwrap() as UploadImageResponse;
+        postImageUrl = res.imageUrl;
       } else if (currentImageUrl === null && postData?.image) {
         // User removed the image
         postImageUrl = null;

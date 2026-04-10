@@ -20,3 +20,19 @@ export type ChatRoomWithId = ChatRoom & { id: string };
 
 export type IChatMessage = Message;
 export type IChatRoom = ChatRoomWithId;
+
+export interface IChatContextType {
+  currentChatRoom: IChatRoom | null;
+  messages: IChatMessage[];
+  loading: boolean;
+  error: string | null;
+  openChat: (otherUserId: string) => Promise<void>;
+  sendMessage: (content: string, images?: File[]) => Promise<void>;
+  editMessage: (messageId: string, newContent: string) => Promise<void>;
+  deleteMessage: (messageId: string) => Promise<void>;
+  markAsRead: (messageId: string) => Promise<void>;
+  muteChat: (chatRoomId: string) => Promise<void>;
+  unmuteChat: (chatRoomId: string) => Promise<void>;
+  archiveChat: (chatRoomId: string) => Promise<void>;
+  unarchiveChat: (chatRoomId: string) => Promise<void>;
+}

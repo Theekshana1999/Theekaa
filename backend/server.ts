@@ -3,7 +3,6 @@ import mongoose from "mongoose";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import cors from "cors";
-
 // Routes
 import userRoutes from "./src/routes/user.routes";
 import postRoutes from "./src/routes/post.routes";
@@ -14,17 +13,36 @@ import postLikeRoutes from "./src/routes/postLike.routes";
 import messageRoutes from "./src/routes/message.routes";
 
 dotenv.config();
-
 const app = express();
 
 // Middleware
 app.use(express.json());
 app.use(cookieParser());
 
+// ✅ CORS Configuration - Allow all your frontend domains
+const allowedOrigins = [
+  "https://theekaa-ahb3.vercel.app",
+  "https://theekaa-ahb3-git-main-sihina-nimnadas-projects-b21c3852.vercel.app",
+  "https://theekaa-ahb3-fl2131pif-sihina-nimnadas-projects-b21c3852.vercel.app",
+  "http://localhost:5173", // Local development
+];
+
 app.use(
   cors({
-    origin: "*", // 🔥 change for production (or your frontend URL)
+    origin: (origin, callback) => {
+    
+      if (!origin) return callback(null, true);
+      
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        console.warn(`CORS rejected origin: ${origin}`);
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
@@ -39,10 +57,8 @@ app.use("/api/messages", messageRoutes);
 
 // ✅ MongoDB connection (no listen)
 let isConnected = false;
-
 const connectDB = async () => {
   if (isConnected) return;
-
   try {
     await mongoose.connect(process.env.MONGO_URI as string);
     isConnected = true;

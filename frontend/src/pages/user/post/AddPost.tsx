@@ -10,7 +10,7 @@ import { useNavigate } from "react-router-dom";
 
 
 interface UploadImageResponse {
-  imageUrl: string;
+  url: string;
 }
 
 interface CreatePostPayload {
@@ -92,8 +92,8 @@ const AddPost: React.FC = () => {
         const file = dataUrlToFile(croppedPreview, "post-image.jpg");
         const formData = new FormData();
         formData.append("image", file);
-        const res = await uploadPostImage(formData).unwrap();
-        postImageUrl = (res as UploadImageResponse).imageUrl;
+        const res = await uploadPostImage(formData).unwrap() as UploadImageResponse;
+        postImageUrl = res.url;
       }
 
       await createPost({
