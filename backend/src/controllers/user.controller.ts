@@ -27,9 +27,9 @@ export const Signup = async (req: AuthRequest, res: Response) => {
 
 res.cookie("token", token, {
   httpOnly: true,
-  secure: true,        
-  sameSite: "none",   
-  maxAge: 60 * 60 * 1000,
+  secure: true,
+  sameSite: "none",
+  path: "/", 
 });
 
   const { password: pwd, ...userData } = user.toObject();
