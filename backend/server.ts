@@ -17,22 +17,30 @@ dotenv.config();
 
 const app = express();
 
-
+// Middleware
 app.use(express.json());
 app.use(cookieParser());
 
-
+/**
+ * ✅ CORS CONFIG (Vercel Friendly)
+ */
 const allowedOrigins = [
-  "https://theekaa-ahb3-git-main-sihina-nimnadas-projects-b21c3852.vercel.app", 
-  
+  "https://theekaa-ahb3.vercel.app",
+  "https://theekaa-ahb3-git-main-sihina-nimnadas-projects-b21c3852.vercel.app",
+  "https://theekaa-ahb3-a99ulgsrb-sihina-nimnadas-projects-b21c3852.vercel.app",
 ];
 
 app.use(
   cors({
     origin: (origin, callback) => {
+      // allow requests with no origin (mobile apps, postman)
       if (!origin) return callback(null, true);
 
-      if (allowedOrigins.includes(origin)) {
+      // allow specific domains + ALL vercel preview domains
+      if (
+        allowedOrigins.includes(origin) ||
+        origin.endsWith(".vercel.app")
+      ) {
         return callback(null, true);
       }
 
@@ -43,7 +51,9 @@ app.use(
   })
 );
 
-
+/**
+ * ✅ Routes
+ */
 app.use("/api/users", userRoutes);
 app.use("/api/posts", postRoutes);
 app.use("/api/chat", chatRoutes);
@@ -52,7 +62,9 @@ app.use("/api/images", imageRoutes);
 app.use("/api/likes", postLikeRoutes);
 app.use("/api/messages", messageRoutes);
 
-
+/**
+ * ✅ Test Routes
+ */
 app.get("/", (req, res) => {
   res.send("🚀 Server is running");
 });
@@ -64,7 +76,9 @@ app.get("/api/test", (req, res) => {
   });
 });
 
-
+/**
+ * ✅ MongoDB Connection (Optimized for Vercel)
+ */
 let isConnected = false;
 
 const connectDB = async () => {
@@ -76,11 +90,13 @@ const connectDB = async () => {
     console.log("✅ MongoDB Connected");
   } catch (error) {
     console.error("❌ MongoDB Error:", error);
-    process.exit(1);
+    throw error;
   }
 };
 
-
+/**
+ * ✅ Local Development
+ */
 const PORT = process.env.PORT || 5000;
 
 if (process.env.NODE_ENV !== "production") {
@@ -91,7 +107,9 @@ if (process.env.NODE_ENV !== "production") {
   });
 }
 
-
+/**
+ * ✅ Vercel Serverless Handler
+ */
 export default async function handler(req: any, res: any) {
   await connectDB();
   return app(req, res);
