@@ -78,12 +78,12 @@ export const LoginAdmin = async (req: Request, res: Response) => {
       role: "admin"
     });
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      sameSite: "strict",
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 60 * 60 * 1000, // 1 hour
-    });
+res.cookie("token", token, {
+  httpOnly: true,
+  secure: true,       
+  sameSite: "none",   
+  maxAge: 60 * 60 * 1000,
+});
 
     const adminObj = admin.toObject();
     const { password: _, ...adminData } = adminObj;
