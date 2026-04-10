@@ -1,7 +1,7 @@
 // Frontend - get the correct backend API base URL
 export const getBaseURL = () => {
   // Use the production backend domain
-  return "http://localhost:5000";
+  return "https://theekaa.vercel.app";
 };
 
 // Alternative: Use environment variable for flexibility
