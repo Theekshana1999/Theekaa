@@ -16,14 +16,21 @@ import type { Unsubscribe } from "firebase/firestore";
 import { db } from "../../firebase/firebaseConfig";
 import type { Message, ChatRoom } from "../../types/chat.types";
 
+// ─── Room ID ──────────────────────────────────────────────────────────────────
+
 export const getRoomId = (a: string, b: string): string => [a, b].sort().join("_");
+
+// ─── Real-time listener ───────────────────────────────────────────────────────
 
 export const subscribeToMessages = (
   roomId: string,
   onUpdate: (messages: Message[]) => void,
   onError?: (err: Error) => void
 ): Unsubscribe => {
-  const q = query(collection(db, "chats", roomId, "messages"), orderBy("createdAt", "asc"));
+  const q = query(
+    collection(db, "chats", roomId, "messages"),
+    orderBy("createdAt", "asc")
+  );
 
   return onSnapshot(
     q,
@@ -33,7 +40,6 @@ export const subscribeToMessages = (
         ...(docSnap.data() as Omit<Message, "id">),
         createdAt: docSnap.data().createdAt?.toDate?.() ?? new Date(),
       }));
-
       onUpdate(msgs);
     },
     (error) => {
@@ -42,6 +48,8 @@ export const subscribeToMessages = (
     }
   );
 };
+
+// ─── Send message ─────────────────────────────────────────────────────────────
 
 export const sendMessage = async (
   roomId: string,
@@ -72,7 +80,12 @@ export const sendMessage = async (
   return msgRef.id;
 };
 
-export const markMessagesAsRead = async (roomId: string, currentUserId: string): Promise<void> => {
+// ─── Mark as read ─────────────────────────────────────────────────────────────
+
+export const markMessagesAsRead = async (
+  roomId: string,
+  currentUserId: string
+): Promise<void> => {
   const q = query(
     collection(db, "chats", roomId, "messages"),
     where("receiverId", "==", currentUserId),
@@ -82,12 +95,14 @@ export const markMessagesAsRead = async (roomId: string, currentUserId: string):
   const snapshot = await getDocs(q);
   if (snapshot.empty) return;
 
-  await Promise.all(snapshot.docs.map((msgDoc) => updateDoc(msgDoc.ref, { read: true, status: "read" })));
+  await Promise.all(
+    snapshot.docs.map((msgDoc) =>
+      updateDoc(msgDoc.ref, { read: true, status: "read" })
+    )
+  );
 };
 
-/* ------------------------------------------------------------------ */
-/* Exports used by src/context/ChatContext.tsx                          */
-/* ------------------------------------------------------------------ */
+// ─── ChatContext helpers ──────────────────────────────────────────────────────
 
 export const getOrCreateChatRoom = async (
   currentUserId: string,
@@ -107,36 +122,49 @@ export const getOrCreateChatRoom = async (
   return { id: roomId, ...room };
 };
 
-export const fetchMessages = async (_roomId: string): Promise<Message[]> => {
-  // Not needed if you use realtime onSnapshot
-  return [];
+export const editMessage = async (
+  roomId: string,
+  messageId: string,
+  newText: string
+): Promise<void> => {
+  await updateDoc(doc(db, "chats", roomId, "messages", messageId), {
+    text: newText,
+  });
 };
 
-export const editMessage = async (roomId: string, messageId: string, newText: string): Promise<void> => {
-  await updateDoc(doc(db, "chats", roomId, "messages", messageId), { text: newText });
+export const deleteMessage = async (
+  roomId: string,
+  messageId: string
+): Promise<void> => {
+  await updateDoc(doc(db, "chats", roomId, "messages", messageId), {
+    text: "",
+    deleted: true,
+  });
 };
 
-export const deleteMessage = async (roomId: string, messageId: string): Promise<void> => {
-  // Soft-delete (avoid requiring deleteDoc import)
-  await updateDoc(doc(db, "chats", roomId, "messages", messageId), { text: "", deleted: true });
-};
-
-export const markMessageAsRead = async (roomId: string, currentUserId: string): Promise<void> => {
+export const markMessageAsRead = async (
+  roomId: string,
+  currentUserId: string
+): Promise<void> => {
   await markMessagesAsRead(roomId, currentUserId);
 };
 
-export const muteChat = async (_currentUserId: string, _chatRoomId: string, _mute: boolean): Promise<void> => {
-  // No-op until implemented in Firestore schema
-};
+// ─── No-ops (implement later in Firestore schema if needed) ───────────────────
 
-export const archiveChat = async (_currentUserId: string, _chatRoomId: string, _archive: boolean): Promise<void> => {
-  // No-op until implemented in Firestore schema
-};
+export const muteChat = async (
+  _currentUserId: string,
+  _chatRoomId: string,
+  _mute: boolean
+): Promise<void> => {};
+
+export const archiveChat = async (
+  _currentUserId: string,
+  _chatRoomId: string,
+  _archive: boolean
+): Promise<void> => {};
 
 export const updateChatMetadata = async (
   _currentUserId: string,
   _chatRoomId: string,
   _metadata: Record<string, unknown>
-): Promise<void> => {
-  // No-op until implemented in Firestore schema
-};
+): Promise<void> => {};

@@ -1,7 +1,7 @@
 import React from "react";
 import { useGetUserQuery } from "../../../redux/userAuth/userAuthAPI";
 import { useSelector } from "react-redux";
-import type { RootState } from "../../../redux/store";
+import { RootState } from "../../../redux/store";
 
 const ProfileDetails: React.FC = () => {
 

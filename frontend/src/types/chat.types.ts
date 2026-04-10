@@ -27,7 +27,7 @@ export interface IChatContextType {
   loading: boolean;
   error: string | null;
   openChat: (otherUserId: string) => Promise<void>;
-  sendMessage: (content: string, images?: File[]) => Promise<void>;
+  sendMessage: (content: string) => Promise<void>;
   editMessage: (messageId: string, newContent: string) => Promise<void>;
   deleteMessage: (messageId: string) => Promise<void>;
   markAsRead: (messageId: string) => Promise<void>;

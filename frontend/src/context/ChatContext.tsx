@@ -1,5 +1,12 @@
-import { createContext, useCallback, useContext, useRef, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useRef,
+  useState,
+} from "react";
 import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
+import { useSelector } from "react-redux";
 
 import { db } from "../firebase/firebaseConfig";
 import {
@@ -13,40 +20,24 @@ import {
   updateChatMetadata,
 } from "../services/firebase/chatService";
 
-import type { IChatRoom, IChatMessage } from "../types/chat.types";
-
-// Define the context type locally or import from types
-export interface IChatContextType {
-  currentChatRoom: IChatRoom | null;
-  messages: IChatMessage[];
-  loading: boolean;
-  error: string | null;
-  openChat: (otherUserId: string) => Promise<void>;
-  sendMessage: (content: string, images?: File[]) => Promise<void>;
-  editMessage: (messageId: string, newContent: string) => Promise<void>;
-  deleteMessage: (messageId: string) => Promise<void>;
-  markAsRead: (messageId: string) => Promise<void>;
-  muteChat: (chatRoomId: string) => Promise<void>;
-  unmuteChat: (chatRoomId: string) => Promise<void>;
-  archiveChat: (chatRoomId: string) => Promise<void>;
-  unarchiveChat: (chatRoomId: string) => Promise<void>;
-}
+import type { IChatRoom, IChatMessage, IChatContextType } from "../types/chat.types";
 
 const ChatContext = createContext<IChatContextType | undefined>(undefined);
 
-export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [currentChatRoom, setCurrentChatRoom] = useState<IChatRoom | null>(null);
   const [messages, setMessages] = useState<IChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // track the user you're chatting with (needed because sendMessage needs receiverId)
   const [activeOtherUserId, setActiveOtherUserId] = useState<string>("");
 
   const unsubscribeRef = useRef<(() => void) | null>(null);
 
-  // TODO: Replace with real auth value (Redux/Firebase Auth/etc.)
-  const currentUserId = "";
+  // Pull currentUserId from Redux — no Firebase Auth needed
+  const currentUserId: string =
+    useSelector((state: any) => state.user.user?._id) ?? "";
 
   const openChat = useCallback(
     async (otherUserId: string) => {
@@ -56,14 +47,11 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         setActiveOtherUserId(otherUserId);
 
-        // Ensure room exists + get room (includes id)
         const chatRoom = await getOrCreateChatRoom(currentUserId, otherUserId);
         setCurrentChatRoom(chatRoom);
 
-        // Stop previous listener
-        if (unsubscribeRef.current) unsubscribeRef.current();
+        unsubscribeRef.current?.();
 
-        // Listen to messages under: chats/{roomId}/messages
         const msgsQuery = query(
           collection(db, "chats", chatRoom.id, "messages"),
           orderBy("createdAt", "asc")
@@ -78,11 +66,9 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
               createdAt: data?.createdAt?.toDate?.() ?? new Date(),
             } as IChatMessage;
           });
-
           setMessages(fetched);
         });
 
-        // optional metadata (currently no-op in service until you implement it)
         await updateChatMetadata(currentUserId, chatRoom.id, {
           unreadCount: 0,
           lastReadTime: new Date(),
@@ -98,22 +84,20 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 
   const sendChatMessage = useCallback(
-    async (content: string, _images?: File[]) => {
-      if (!currentChatRoom) {
-        setError("No chat room selected");
-        return;
-      }
-      if (!activeOtherUserId) {
-        setError("No receiver selected");
-        return;
-      }
+    async (content: string) => {
+      if (!currentChatRoom) { setError("No chat room selected"); return; }
+      if (!activeOtherUserId) { setError("No receiver selected"); return; }
 
       setLoading(true);
       setError(null);
 
       try {
-        // sendMessage(roomId, senderId, receiverId, text)
-        await sendMessageService(currentChatRoom.id, currentUserId, activeOtherUserId, content);
+        await sendMessageService(
+          currentChatRoom.id,
+          currentUserId,
+          activeOtherUserId,
+          content
+        );
       } catch (err) {
         console.error("Error sending message:", err);
         setError(err instanceof Error ? err.message : "Failed to send message");
@@ -127,12 +111,9 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const editChatMessage = useCallback(
     async (messageId: string, newContent: string) => {
       if (!currentChatRoom) return;
-      setError(null);
-
       try {
         await editMessageService(currentChatRoom.id, messageId, newContent);
       } catch (err) {
-        console.error("Error editing message:", err);
         setError(err instanceof Error ? err.message : "Failed to edit message");
       }
     },
@@ -142,12 +123,9 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const deleteChatMessage = useCallback(
     async (messageId: string) => {
       if (!currentChatRoom) return;
-      setError(null);
-
       try {
         await deleteMessageService(currentChatRoom.id, messageId);
       } catch (err) {
-        console.error("Error deleting message:", err);
         setError(err instanceof Error ? err.message : "Failed to delete message");
       }
     },
@@ -171,7 +149,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         await muteChatService(currentUserId, chatRoomId, true);
       } catch (err) {
-        console.error("Error muting chat:", err);
         setError(err instanceof Error ? err.message : "Failed to mute chat");
       }
     },
@@ -183,7 +160,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         await muteChatService(currentUserId, chatRoomId, false);
       } catch (err) {
-        console.error("Error unmuting chat:", err);
         setError(err instanceof Error ? err.message : "Failed to unmute chat");
       }
     },
@@ -195,7 +171,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         await archiveChatService(currentUserId, chatRoomId, true);
       } catch (err) {
-        console.error("Error archiving chat:", err);
         setError(err instanceof Error ? err.message : "Failed to archive chat");
       }
     },
@@ -207,7 +182,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         await archiveChatService(currentUserId, chatRoomId, false);
       } catch (err) {
-        console.error("Error unarchiving chat:", err);
         setError(err instanceof Error ? err.message : "Failed to unarchive chat");
       }
     },
