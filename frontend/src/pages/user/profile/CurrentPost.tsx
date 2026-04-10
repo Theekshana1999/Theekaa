@@ -1,13 +1,12 @@
 import React from "react";
 import { useSelector } from "react-redux";
 import {
-  useGetPostByUserQuery,
+  useGetPostByUserQuery, 
   useRequestDeletePostMutation,
 } from "../../../redux/post/postAPI";
 import { useNavigate } from "react-router-dom";
 
 const CurrentPost: React.FC = () => {
-
   const userId = useSelector((state: any) => state.user.user?._id);
 
   const { data: posts, isLoading, error } =
@@ -44,7 +43,6 @@ const CurrentPost: React.FC = () => {
 
   return (
     <div className="grid lg:grid-cols-2 gap-6">
-
       {/* Image */}
       <div className="p-[3px] rounded-2xl bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 shadow-lg">
         <img
@@ -56,15 +54,12 @@ const CurrentPost: React.FC = () => {
 
       {/* Details */}
       <div className="flex flex-col justify-between">
-
         <div>
-
           <h2 className="text-xl font-bold mb-4 bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 bg-clip-text text-transparent">
             Current Post
           </h2>
 
           <div className="space-y-2 mb-4">
-
             <p className="text-gray-600">
               <strong className="text-gray-700">Education:</strong> {post.education}
             </p>
@@ -76,17 +71,14 @@ const CurrentPost: React.FC = () => {
             <p className="text-gray-500 text-sm leading-relaxed">
               {post.other_details}
             </p>
-
           </div>
 
           <span className="px-4 py-1.5 bg-gradient-to-r from-pink-100 to-purple-100 text-purple-600 rounded-full text-sm font-medium border border-purple-200">
             {post.post_status}
           </span>
-
         </div>
 
         <div className="flex gap-3 mt-6">
-
           <button
             className="flex-1 py-2.5 rounded-xl font-semibold text-white
             bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500
@@ -106,11 +98,8 @@ const CurrentPost: React.FC = () => {
               Delete
             </button>
           </div>
-
         </div>
-
       </div>
-
     </div>
   );
 };

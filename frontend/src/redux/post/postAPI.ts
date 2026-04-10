@@ -6,7 +6,6 @@ export const postAPI = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl: `${getBaseURL()}/api/posts`,
     prepareHeaders: (headers) => {
-      
       const token = localStorage.getItem("token");
       
       if (token) {
@@ -33,17 +32,23 @@ export const postAPI = createApi({
 
     getPostById: builder.query({
       query: (id) => `/${id}`,
-      providesTags: (result, error, id) => [{ type: "Post", id }],
+      providesTags: (_result, _error, id) => [{ type: "Post", id }],
     }),
 
     getPostByUserId: builder.query({
       query: (userId) => `/user/${userId}`,
-      providesTags: (result, error, userId) => [{ type: "Post", id: `user-${userId}` }],
+      providesTags: (_result, _error, userId) => [{ type: "Post", id: `user-${userId}` }],
+    }),
+
+    // ✅ This is the missing export that CurrentPost.tsx needs
+    getPostByUser: builder.query({
+      query: (userId) => `/user/${userId}`,
+      providesTags: (_result, _error, userId) => [{ type: "Post", id: `user-posts-${userId}` }],
     }),
 
     getPostByUserIdRecent: builder.query({
       query: (userId) => `/user-recent/${userId}`,
-      providesTags: (result, error, userId) => [{ type: "Post", id: `user-recent-${userId}` }],
+      providesTags: (_result, _error, userId) => [{ type: "Post", id: `user-recent-${userId}` }],
     }),
 
     editPost: builder.mutation({
@@ -52,7 +57,7 @@ export const postAPI = createApi({
         method: "PUT",
         body: { other_details },
       }),
-      invalidatesTags: (result, error, { id }) => [{ type: "Post", id }, "Post"],
+      invalidatesTags: (_result, _error, { id }) => [{ type: "Post", id }, "Post"],
     }),
 
     requestDeletePost: builder.mutation({
@@ -60,7 +65,7 @@ export const postAPI = createApi({
         url: `/${id}/delete-request`,
         method: "PUT",
       }),
-      invalidatesTags: (result, error, id) => [{ type: "Post", id }, "Post"],
+      invalidatesTags: (_result, _error, id) => [{ type: "Post", id }, "Post"],
     }),
 
     updatePostStatus: builder.mutation({
@@ -69,7 +74,7 @@ export const postAPI = createApi({
         method: "PUT",
         body: { post_status },
       }),
-      invalidatesTags: (result, error, { id }) => [{ type: "Post", id }, "Post"],
+      invalidatesTags: (_result, _error, { id }) => [{ type: "Post", id }, "Post"],
     }),
 
     getAllDeleteRequestedPosts: builder.query({
@@ -82,7 +87,7 @@ export const postAPI = createApi({
         url: `/${id}`,
         method: "DELETE",
       }),
-      invalidatesTags: (result, error, id) => [{ type: "Post", id }, "Post"],
+      invalidatesTags: (_result, _error, id) => [{ type: "Post", id }, "Post"],
     }),
   }),
 });
@@ -92,6 +97,7 @@ export const {
   useGetPostsQuery,
   useGetPostByIdQuery,
   useGetPostByUserIdQuery,
+  useGetPostByUserQuery, // ✅ Added this export
   useGetPostByUserIdRecentQuery,
   useEditPostMutation,
   useRequestDeletePostMutation,
