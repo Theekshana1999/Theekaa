@@ -1,30 +1,33 @@
 import { Router } from "express";
 import {
-    CreatePostRequest,
-    GetPosts ,
-    GetPostsById, 
-    UpdatePostStatus,
-    RequestDeletePost,
-    GetAllDeleteRequestedPosts,
-    DeletePost, 
-    EditPost,
-    GetPostsByUserId,
-    getPostByUserId
-
+  CreatePostRequest,
+  GetPosts,
+  GetPostsById,
+  UpdatePostStatus,
+  RequestDeletePost,
+  GetAllDeleteRequestedPosts,
+  DeletePost,
+  EditPost,
+  GetPostsByUserId,
+  getPostByUserId,
 } from "../controllers/post.controller";
-import { verifyAdmin,verifyUser } from "../middleware/auth.middleware";
+import { verifyAdmin, verifyUser } from "../middleware/auth.middleware";
 import upload from "../middleware/upload.middleware";
 
 const router = Router();
 
-router.post("/create-post",verifyUser, upload.single("image"), CreatePostRequest); 
-router.get("/get-posts", GetPosts);//☑️
-router.get("/get-post/:id",  GetPostsById);//☑️
-router.put("/status/:id", verifyAdmin, UpdatePostStatus);//☑️
-router.post("/request-delete/:id", verifyUser, RequestDeletePost); //☑️
-router.get("/delete-requests", verifyAdmin, GetAllDeleteRequestedPosts); //☑️
-router.delete("/delete-post/:id", verifyAdmin, DeletePost);//☑️
-router.put("/edit-post/:id", verifyUser, EditPost);//☑️
-router.get("/user-posts/:userId", verifyUser, GetPostsByUserId);//☑️
-router.get("/user-post/:userId", verifyUser, getPostByUserId);
+
+router.get("/", GetPosts); // GET /api/posts/
+router.get("/:id", GetPostsById); // GET /api/posts/:id
+router.get("/user/:userId", verifyUser,GetPostsByUserId); // GET /api/posts/user/:userId
+router.get("/user-recent/:userId",verifyUser, getPostByUserId); // GET /api/posts/user-recent/:userId
+
+router.post("/", verifyUser, upload.single("image"), CreatePostRequest); // POST /api/posts/
+router.put("/:id", verifyUser, EditPost); // PUT /api/posts/:id
+router.put("/:id/delete-request", verifyUser, RequestDeletePost); // PUT /api/posts/:id/delete-request
+
+router.get("/delete-requests", verifyAdmin, GetAllDeleteRequestedPosts); // GET /api/posts/delete-requests
+router.put("/:id/status", verifyAdmin, UpdatePostStatus); // PUT /api/posts/:id/status
+router.delete("/:id", verifyAdmin, DeletePost); // DELETE /api/posts/:id
+
 export default router;
