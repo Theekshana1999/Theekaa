@@ -23,7 +23,7 @@ app.use(cookieParser());
 
 
 const allowedOrigins = [
-  "http://localhost:5173", 
+  "https://theekaa-ahb3-git-main-sihina-nimnadas-projects-b21c3852.vercel.app", 
   
 ];
 
