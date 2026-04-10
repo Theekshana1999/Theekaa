@@ -20,7 +20,8 @@ const SignIn: React.FC = () => {
     e.preventDefault();
     try {
       const res = await signin({ phone, password }).unwrap();
-      dispatch(setUser(res.user));
+      // Dispatch both user and token
+      dispatch(setUser({ user: res.user, token: res.token }));
       navigate("/feed");
     } catch (err: any) {
       console.error("Login failed:", err);
@@ -76,7 +77,7 @@ const SignIn: React.FC = () => {
 
               {/* Logo / Brand */}
               <div className="mb-8">
-                <span onClick={() => navigate("/admin/signin")}   className="text-2xl font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 bg-clip-text text-transparent">
+                <span onClick={() => navigate("/admin/signin")} className="text-2xl font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 bg-clip-text text-transparent">
                   Theeka
                 </span>
                 <h2 className="text-2xl font-bold text-gray-800 mt-4 mb-1">

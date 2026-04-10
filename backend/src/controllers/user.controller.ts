@@ -25,17 +25,11 @@ export const Signup = async (req: AuthRequest, res: Response) => {
     role: "user",
   });
 
-res.cookie("token", token, {
-  httpOnly: true,
-  secure: true,
-  sameSite: "none",
-  path: "/", 
-});
-
   const { password: pwd, ...userData } = user.toObject();
 
   res.status(201).json({
     message: "Signup successful",
+    token, // Send token in response body
     user: userData
   });
 };
@@ -47,7 +41,7 @@ export const Signin = async (req: AuthRequest, res: Response) => {
   const user = await User.findOne({ phone });
 
   if (!user || !(await user.comparePassword(password))) {
-    return res.status(401).json({ message: "Invalid credentials", phone, password });
+    return res.status(401).json({ message: "Invalid credentials" });
   }
 
   const token = generateToken({
@@ -55,18 +49,14 @@ export const Signin = async (req: AuthRequest, res: Response) => {
     role: "user",
   });
 
-  res.cookie("token", token, {
-    httpOnly: true,
-    sameSite: "strict",
-    secure: false,
-    maxAge: 60 * 60 * 1000,
-  });
-
   const { password: pwd, ...userData } = user.toObject();
 
-  res.json({ message: "Sign in Sucessfull", user: userData });
+  res.json({ 
+    message: "Sign in Successful", 
+    token, // Send token in response body
+    user: userData 
+  });
 };
-
 /* ---------- GET USER ---------- */
 export const getUser = async (req: AuthRequest, res: Response) => {
 

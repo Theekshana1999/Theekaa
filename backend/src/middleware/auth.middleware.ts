@@ -9,8 +9,13 @@ export const verifyUser = async (
   next: NextFunction
 ) => {
   try {
-    const token = req.cookies.token;
-    console.log("Token from cookies:", token);
+    // Read token from Authorization header
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.startsWith("Bearer ") 
+      ? authHeader.slice(7) 
+      : null;
+
+    console.log("Token from header:", token);
 
     if (!token) {
       return res.status(401).json({ message: "unauthorized" });
@@ -36,16 +41,20 @@ export const verifyUser = async (
   }
 };
 
-
-
 export const verifyAdmin = async (
   req: any,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    const token = req.cookies.token;
-    console.log("Token from cookies:", token);
+    // Read token from Authorization header
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.startsWith("Bearer ") 
+      ? authHeader.slice(7) 
+      : null;
+
+    console.log("Token from header:", token);
+
     if (!token) {
       return res.status(401).json({ message: "Unauthorized token not found" });
     }
@@ -54,20 +63,19 @@ export const verifyAdmin = async (
       token,
       process.env.JWT_SECRET as string
     );
+
     console.log("Decoded token:", decoded);
 
     const admin = await Admin.findById(decoded.id);
+
     if (!admin) {
       return res.status(401).json({ message: "Admin not found" });
     }
 
     req.admin = admin;
-
     next();
+  } catch (error) {
+    console.error("Admin verification error:", error);
+    res.status(401).json({ message: "Invalid token" });
   }
-    catch (error) {
-      console.error("Admin verification error:", error);
-      res.status(401).json({ message: "Invalid token" });
-    }
-
-  }
+};

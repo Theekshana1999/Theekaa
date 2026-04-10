@@ -11,40 +11,52 @@ export interface User {
 
 interface UserAuthState {
   user: User | null;
+  token: string | null;
   loading: boolean;
   error: string | null;
 }
 
-// Get user from localStorage
-const getUserFromLocalStorage = (): User | null => {
+// Get user and token from localStorage
+const getInitialState = () => {
   try {
     const userData = localStorage.getItem("user");
-    return userData ? JSON.parse(userData) : null;
+    const token = localStorage.getItem("token");
+    return {
+      user: userData ? JSON.parse(userData) : null,
+      token: token || null,
+      loading: false,
+      error: null,
+    };
   } catch (error) {
-    console.error("Error parsing user from localStorage:", error);
-    return null;
+    console.error("Error parsing from localStorage:", error);
+    return {
+      user: null,
+      token: null,
+      loading: false,
+      error: null,
+    };
   }
 };
 
-const initialState: UserAuthState = {
-  user: getUserFromLocalStorage(),
-  loading: false,
-  error: null,
-};
+const initialState: UserAuthState = getInitialState();
 
 const userAuthSlice = createSlice({
   name: "userAuth",
   initialState,
   reducers: {
-    setUser: (state, action: PayloadAction<User>) => {
-      state.user = action.payload;
+    setUser: (state, action: PayloadAction<{ user: User; token: string }>) => {
+      state.user = action.payload.user;
+      state.token = action.payload.token;
       state.error = null;
-      localStorage.setItem("user", JSON.stringify(action.payload));
+      localStorage.setItem("user", JSON.stringify(action.payload.user));
+      localStorage.setItem("token", action.payload.token);
     },
     logout: (state) => {
       state.user = null;
+      state.token = null;
       state.error = null;
       localStorage.removeItem("user");
+      localStorage.removeItem("token");
     },
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.loading = action.payload;
