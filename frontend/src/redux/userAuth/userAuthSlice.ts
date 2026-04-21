@@ -17,7 +17,7 @@ interface UserAuthState {
 }
 
 // Get user and token from localStorage
-const getInitialState = () => {
+const getInitialState = (): UserAuthState => {
   try {
     const userData = localStorage.getItem("user");
     const token = localStorage.getItem("token");

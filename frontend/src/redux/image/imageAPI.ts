@@ -1,4 +1,3 @@
-
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { getBaseURL } from "../../utils/baseURL";
 
@@ -12,9 +11,15 @@ export const imageAPI = createApi({
   reducerPath: "imageAPI",
   baseQuery: fetchBaseQuery({
     baseUrl: `${getBaseURL()}/api/images`,
-    credentials: "include", 
+    prepareHeaders: (headers) => {
+      const token = localStorage.getItem("token");
+      if (token) {
+        headers.set("Authorization", `Bearer ${token}`);
+      }
+      return headers;
+    },
   }),
-  tagTypes: ["Images"], 
+  tagTypes: ["Images"],
   endpoints: (builder) => ({
     uploadPostImage: builder.mutation<UploadImageResponse, FormData>({
       query: (formData) => ({
@@ -22,7 +27,7 @@ export const imageAPI = createApi({
         method: "POST",
         body: formData,
       }),
-      invalidatesTags: ["Images"], 
+      invalidatesTags: ["Images"],
     }),
 
     uploadProfileImage: builder.mutation<UploadImageResponse, FormData>({
@@ -33,7 +38,8 @@ export const imageAPI = createApi({
       }),
       invalidatesTags: ["Images"],
     }),
-    uploadBannerImage:builder.mutation<UploadImageResponse, FormData>({
+
+    uploadBannerImage: builder.mutation<UploadImageResponse, FormData>({
       query: (formData) => ({
         url: "/upload-banner-image",
         method: "POST",
@@ -41,7 +47,8 @@ export const imageAPI = createApi({
       }),
       invalidatesTags: ["Images"],
     }),
-    uploadReviewImage:builder.mutation<UploadImageResponse, FormData>({
+
+    uploadReviewImage: builder.mutation<UploadImageResponse, FormData>({
       query: (formData) => ({
         url: "/upload-review-image",
         method: "POST",
@@ -49,18 +56,21 @@ export const imageAPI = createApi({
       }),
       invalidatesTags: ["Images"],
     }),
-    uploadSlideImage:builder.mutation<UploadImageResponse, FormData>({
+
+    uploadSlideImage: builder.mutation<UploadImageResponse, FormData>({
       query: (formData) => ({
         url: "/upload-slide-image",
         method: "POST",
         body: formData,
       }),
-      invalidatesTags: ["Images"],  
+      invalidatesTags: ["Images"],
     }),
+
     getBanners: builder.query<string[], void>({
       query: () => "/banners",
       providesTags: ["Images"],
     }),
+
     deleteBanner: builder.mutation<{ message: string }, string>({
       query: (id) => ({
         url: `/delete-banner/${id}`,
@@ -72,11 +82,11 @@ export const imageAPI = createApi({
 });
 
 export const {
-  useUploadPostImageMutation, //☑️
-  useUploadProfileImageMutation,//☑️
-  useUploadBannerImageMutation,//☑️
-  useUploadReviewImageMutation,//☑️
-  useUploadSlideImageMutation,//☑️
-  useGetBannersQuery,//☑️
-  useDeleteBannerMutation,//☑️
+  useUploadPostImageMutation,
+  useUploadProfileImageMutation,
+  useUploadBannerImageMutation,
+  useUploadReviewImageMutation,
+  useUploadSlideImageMutation,
+  useGetBannersQuery,
+  useDeleteBannerMutation,
 } = imageAPI;
