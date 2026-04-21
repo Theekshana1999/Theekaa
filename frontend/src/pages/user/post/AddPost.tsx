@@ -13,13 +13,6 @@ interface UploadImageResponse {
   imageUrl?: string;
 }
 
-interface CreatePostPayload {
-  other_details: string;
-  current_living: string;
-  education: string;
-  image: string | null;
-}
-
 // Extract the error message from an RTK Query / fetch error
 const extractErrorMessage = (err: unknown): string => {
   if (err && typeof err === "object") {
@@ -96,7 +89,7 @@ const AddPost: React.FC = () => {
         postImageUrl = res.url ?? res.imageUrl ?? null;
       }
 
-      // cast to any to avoid strict service type mismatch and preserve your payload shape
+      // keep payload shape same as your backend expects
       await createPost({
         other_details: otherDetails,
         current_living: currentLiving,

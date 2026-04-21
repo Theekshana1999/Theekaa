@@ -78,7 +78,8 @@ const UpdateProfile: React.FC = () => {
       setImagePreview(user.ProfilePicture ?? null);
       if (user.dateOfBirth) {
         // normalize to YYYY-MM-DD for inputs/pickers
-        setDateOfBirth(new Date(user.dateOfBirth).toISOString().split("T")[0]);
+        const iso = new Date(String(user.dateOfBirth)).toISOString().split("T")[0];
+        setDateOfBirth(iso);
       }
     }
   }, [user]);
