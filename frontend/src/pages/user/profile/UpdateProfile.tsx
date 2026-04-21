@@ -37,7 +37,7 @@ const calcAge = (dob: string): number | null => {
 const UpdateProfile: React.FC = () => {
   const userId = useSelector((state: RootState) => state.user.user?._id);
 
-  // ensure we pass a string and skip if no userId
+  // pass userId as string and skip when missing
   const { data: rawUser, isLoading } = useGetUserQuery(userId ?? "", { skip: !userId });
 
   const [updateProfile] = useUpdateProfileMutation();
@@ -77,14 +77,13 @@ const UpdateProfile: React.FC = () => {
       setWeight(user.weight != null ? String(user.weight) : "");
       setImagePreview(user.ProfilePicture ?? null);
 
-      // Safely normalize dateOfBirth into YYYY-MM-DD (always pass string to state)
+      // Safely normalize dateOfBirth into YYYY-MM-DD (always a string)
       if (user.dateOfBirth) {
         const rawDob = String(user.dateOfBirth);
         const parsed = new Date(rawDob);
         if (!isNaN(parsed.getTime())) {
-          setDateOfBirth(parsed.toISOString().slice(0, 10)); // 'YYYY-MM-DD'
+          setDateOfBirth(parsed.toISOString().slice(0, 10));
         } else {
-          // Invalid date — clear to empty string
           setDateOfBirth("");
         }
       } else {
@@ -103,6 +102,13 @@ const UpdateProfile: React.FC = () => {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+
+    // Guard: ensure we have a userId (prevents passing undefined where string required)
+    if (!userId) {
+      alert("User id missing. Please sign in again.");
+      return;
+    }
+
     try {
       if (imageFile) {
         const formData = new FormData();
@@ -110,12 +116,13 @@ const UpdateProfile: React.FC = () => {
         const uploadRes = (await uploadProfileImage(formData).unwrap()) as UploadResponse;
         const uploadedUrl = uploadRes.url ?? uploadRes.imageUrl;
         if (uploadedUrl) {
-          await updateProfilePicture({ profilePictureUrl: uploadedUrl }).unwrap();
+          // updateProfilePicture expects a string url
+          await updateProfilePicture({ profilePictureUrl: String(uploadedUrl) }).unwrap();
         }
       }
 
       await updateProfile({
-        id: userId,
+        id: userId, // userId is guaranteed string due to guard above
         first_name: firstName,
         last_name: lastName,
         gender,
