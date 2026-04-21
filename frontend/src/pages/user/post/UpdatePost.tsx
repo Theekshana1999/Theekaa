@@ -9,7 +9,8 @@ import ImageCropper from "./ImageCropper";
 import PostErrorBanner from "./PostErrorBanner";
 
 interface UploadImageResponse {
-  imageUrl: string;
+  imageUrl?: string;
+  url?: string;
 }
 
 const extractErrorMessage = (err: unknown): string => {
@@ -37,8 +38,16 @@ const UpdatePost: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  // Fetch existing post data
-  const { data: postData, isLoading: isFetchingPost, error: fetchError } = useGetPostByIdQuery(id || "");
+  // Fetch existing post data; skip if no id
+  const { data: rawPostData, isLoading: isFetchingPost, error: fetchError } = useGetPostByIdQuery(id ?? "", {
+    skip: !id,
+  });
+
+  // Normalize the fetched post (support { data: post } or post)
+  const normalizedPost: any = ((): any => {
+    const r: any = rawPostData;
+    return r?.data ?? r ?? null;
+  })();
 
   // Form state
   const [otherDetails, setOtherDetails] = useState("");
@@ -59,24 +68,27 @@ const UpdatePost: React.FC = () => {
 
   // Populate form when post data is loaded
   useEffect(() => {
-    if (postData) {
-      setOtherDetails(postData.other_details || "");
-      setCurrentLiving(postData.current_living || "");
-      setEducation(postData.education || "");
-      setCurrentImageUrl(postData.image || null);
+    if (normalizedPost) {
+      setOtherDetails(normalizedPost.other_details ?? "");
+      setCurrentLiving(normalizedPost.current_living ?? "");
+      setEducation(normalizedPost.education ?? "");
+      setCurrentImageUrl(normalizedPost.image ?? null);
     }
-  }, [postData]);
+  }, [normalizedPost]);
 
   // Track if form has been modified
   useEffect(() => {
-    if (!postData) return;
+    if (!normalizedPost) {
+      setHasChanges(false);
+      return;
+    }
     const changed =
-      otherDetails !== (postData.other_details || "") ||
-      currentLiving !== (postData.current_living || "") ||
-      education !== (postData.education || "") ||
+      otherDetails !== (normalizedPost.other_details ?? "") ||
+      currentLiving !== (normalizedPost.current_living ?? "") ||
+      education !== (normalizedPost.education ?? "") ||
       croppedPreview !== null;
     setHasChanges(changed);
-  }, [otherDetails, currentLiving, education, croppedPreview, postData]);
+  }, [otherDetails, currentLiving, education, croppedPreview, normalizedPost]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -131,9 +143,9 @@ const UpdatePost: React.FC = () => {
         const file = dataUrlToFile(croppedPreview, "post-image.jpg");
         const formData = new FormData();
         formData.append("image", file);
-        const res = await uploadPostImage(formData).unwrap() as unknown as UploadImageResponse;
-        postImageUrl = res.imageUrl;
-      } else if (currentImageUrl === null && postData?.image) {
+        const res = (await uploadPostImage(formData).unwrap()) as UploadImageResponse;
+        postImageUrl = res.imageUrl ?? res.url ?? null;
+      } else if (currentImageUrl === null && normalizedPost?.image) {
         // User removed the image
         postImageUrl = null;
       }
@@ -153,7 +165,7 @@ const UpdatePost: React.FC = () => {
       await editPost({
         id,
         postData: payload,
-      }).unwrap();
+      } as any).unwrap();
 
       setSuccess(true);
       setCroppedPreview(null);
@@ -170,7 +182,6 @@ const UpdatePost: React.FC = () => {
     }
   };
 
-  
   if (isFetchingPost) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-indigo-50 flex items-center justify-center p-4">
@@ -187,10 +198,7 @@ const UpdatePost: React.FC = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-indigo-50 flex items-center justify-center p-4">
         <div className="w-full max-w-2xl">
-          <PostErrorBanner
-            message={extractErrorMessage(fetchError)}
-            onDismiss={() => navigate(-1)}
-          />
+          <PostErrorBanner message={extractErrorMessage(fetchError)} onDismiss={() => navigate(-1)} />
           <button
             onClick={() => navigate(-1)}
             className="mt-4 mx-auto block px-6 py-2 rounded-xl font-semibold text-white bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 hover:opacity-90 transition"
@@ -203,7 +211,7 @@ const UpdatePost: React.FC = () => {
   }
 
   // Not found
-  if (!postData) {
+  if (!normalizedPost) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-indigo-50 flex items-center justify-center p-4">
         <div className="w-full max-w-2xl text-center">
@@ -223,17 +231,10 @@ const UpdatePost: React.FC = () => {
   return (
     <>
       {/* Cropper modal */}
-      {showCropper && rawSrc && (
-        <ImageCropper
-          src={rawSrc}
-          onDone={handleCropDone}
-          onCancel={handleCropCancel}
-        />
-      )}
+      {showCropper && rawSrc && <ImageCropper src={rawSrc} onDone={handleCropDone} onCancel={handleCropCancel} />}
 
       <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-indigo-50 flex items-center justify-center p-4 py-12">
         <div className="w-full max-w-2xl backdrop-blur-xl bg-white/80 border border-white/40 shadow-2xl rounded-2xl p-8">
-
           {/* Header */}
           <div className="mb-8 text-center">
             <h1 className="text-3xl font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 bg-clip-text text-transparent">
@@ -245,10 +246,7 @@ const UpdatePost: React.FC = () => {
           {/* Error Banner */}
           {errorMessage && (
             <div className="mb-6">
-              <PostErrorBanner
-                message={errorMessage}
-                onDismiss={() => setErrorMessage(null)}
-              />
+              <PostErrorBanner message={errorMessage} onDismiss={() => setErrorMessage(null)} />
             </div>
           )}
 
@@ -261,12 +259,9 @@ const UpdatePost: React.FC = () => {
           )}
 
           <form className="space-y-6" onSubmit={handleSubmit}>
-
             {/* Other Details */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Other Details
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Other Details</label>
               <textarea
                 rows={4}
                 placeholder="Write something about yourself..."
@@ -278,9 +273,7 @@ const UpdatePost: React.FC = () => {
 
             {/* Current Living */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Current Living District
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Current Living District</label>
               <DistrictDropdown value={currentLiving} onChange={setCurrentLiving} />
             </div>
 
@@ -300,9 +293,7 @@ const UpdatePost: React.FC = () => {
             <div>
               <label className="text-sm font-medium text-gray-700 mb-2 block">
                 Upload Image
-                <span className="ml-2 text-[11px] font-normal text-gray-400">
-                  (auto-cropped to 3:4 portrait for the feed)
-                </span>
+                <span className="ml-2 text-[11px] font-normal text-gray-400">(auto-cropped to 3:4 portrait for the feed)</span>
               </label>
 
               {croppedPreview ? (
@@ -310,27 +301,17 @@ const UpdatePost: React.FC = () => {
                 <div className="flex flex-col items-center gap-3">
                   <div className="p-[3px] rounded-2xl bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 shadow-lg">
                     <div className="overflow-hidden rounded-[14px]" style={{ width: 180, height: 240 }}>
-                      <img
-                        src={croppedPreview}
-                        alt="new cropped preview"
-                        className="w-full h-full object-cover"
-                      />
+                      <img src={croppedPreview} alt="new cropped preview" className="w-full h-full object-cover" />
                     </div>
                   </div>
                   <p className="text-[11px] text-gray-400">New Preview (3:4 portrait)</p>
                   <div className="flex gap-2">
-                    <label className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold
-                      border border-fuchsia-200 text-fuchsia-600 hover:bg-fuchsia-50 cursor-pointer transition">
+                    <label className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold border border-fuchsia-200 text-fuchsia-600 hover:bg-fuchsia-50 cursor-pointer transition">
                       <Crop size={13} />
                       Change / Re-crop
                       <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
                     </label>
-                    <button
-                      type="button"
-                      onClick={() => setCroppedPreview(null)}
-                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold
-                        border border-rose-200 text-rose-500 hover:bg-rose-50 transition"
-                    >
+                    <button type="button" onClick={() => setCroppedPreview(null)} className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold border border-rose-200 text-rose-500 hover:bg-rose-50 transition">
                       <X size={13} />
                       Discard Changes
                     </button>
@@ -341,27 +322,17 @@ const UpdatePost: React.FC = () => {
                 <div className="flex flex-col items-center gap-3">
                   <div className="p-[3px] rounded-2xl bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 shadow-lg">
                     <div className="overflow-hidden rounded-[14px]" style={{ width: 180, height: 240 }}>
-                      <img
-                        src={currentImageUrl}
-                        alt="current post"
-                        className="w-full h-full object-cover"
-                      />
+                      <img src={currentImageUrl} alt="current post" className="w-full h-full object-cover" />
                     </div>
                   </div>
                   <p className="text-[11px] text-gray-400">Current Image (3:4 portrait)</p>
                   <div className="flex gap-2">
-                    <label className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold
-                      border border-fuchsia-200 text-fuchsia-600 hover:bg-fuchsia-50 cursor-pointer transition">
+                    <label className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold border border-fuchsia-200 text-fuchsia-600 hover:bg-fuchsia-50 cursor-pointer transition">
                       <Crop size={13} />
                       Replace Image
                       <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
                     </label>
-                    <button
-                      type="button"
-                      onClick={handleRemoveImage}
-                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold
-                        border border-rose-200 text-rose-500 hover:bg-rose-50 transition"
-                    >
+                    <button type="button" onClick={handleRemoveImage} className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold border border-rose-200 text-rose-500 hover:bg-rose-50 transition">
                       <X size={13} />
                       Remove Image
                     </button>
@@ -369,8 +340,7 @@ const UpdatePost: React.FC = () => {
                 </div>
               ) : (
                 // No image - upload prompt
-                <label className="flex flex-col items-center justify-center border-2 border-dashed border-purple-200
-                  rounded-xl py-10 cursor-pointer hover:border-pink-400 transition bg-gradient-to-br from-pink-50/50 to-indigo-50/50">
+                <label className="flex flex-col items-center justify-center border-2 border-dashed border-purple-200 rounded-xl py-10 cursor-pointer hover:border-pink-400 transition bg-gradient-to-br from-pink-50/50 to-indigo-50/50">
                   <div className="flex flex-col items-center">
                     <div className="p-4 rounded-full bg-gradient-to-r from-pink-100 via-purple-100 to-indigo-100 mb-2">
                       <UploadCloud size={36} className="text-purple-400" />
@@ -393,18 +363,10 @@ const UpdatePost: React.FC = () => {
 
             {/* Submit */}
             <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => navigate(-1)}
-                className="flex-1 py-3 rounded-xl font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition"
-              >
+              <button type="button" onClick={() => navigate(-1)} className="flex-1 py-3 rounded-xl font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition">
                 Cancel
               </button>
-              <button
-                type="submit"
-                disabled={isSubmitting || !hasChanges}
-                className="flex-1 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 hover:opacity-90 transition shadow-lg disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
+              <button type="submit" disabled={isSubmitting || !hasChanges} className="flex-1 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 hover:opacity-90 transition shadow-lg disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2">
                 {isSubmitting ? (
                   <>
                     <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
@@ -418,7 +380,6 @@ const UpdatePost: React.FC = () => {
                 )}
               </button>
             </div>
-
           </form>
         </div>
       </div>

@@ -17,7 +17,11 @@ const ViewPostButton: React.FC<{ senderId: string }> = ({ senderId }) => {
     skip: !senderId,
   });
 
-  const postId = data?.data?._id ?? data?._id ?? null;
+  // Normalize response: API might return Post[] or { data: Post[] } or a single post
+  const raw: any = data;
+  const postsArray: any[] = Array.isArray(raw) ? raw : raw?.data ?? raw ? (Array.isArray(raw?.data) ? raw.data : [raw]) : [];
+  const post = postsArray.length ? postsArray[0] : null;
+  const postId = post?._id ?? null;
 
   if (isLoading) {
     return (
@@ -49,10 +53,9 @@ const ViewPostButton: React.FC<{ senderId: string }> = ({ senderId }) => {
 
 const ReceivedRequest: React.FC = () => {
   const currentUserId = useSelector((state: any) => state.user.user?._id);
-  const { data, isLoading, refetch } = useGetReceivedRequestsQuery(
-    currentUserId,
-    { skip: !currentUserId }
-  );
+  const { data, isLoading, refetch } = useGetReceivedRequestsQuery(currentUserId, {
+    skip: !currentUserId,
+  });
   const [updateStatus] = useUpdateRequestStatusMutation();
   const [blockUser] = useBlockUserMutation();
   const [unblockUser] = useUnblockUserMutation();
@@ -75,10 +78,7 @@ const ReceivedRequest: React.FC = () => {
       return next;
     });
 
-  const handleAction = async (
-    reqId: string,
-    status: "accepted" | "rejected"
-  ) => {
+  const handleAction = async (reqId: string, status: "accepted" | "rejected") => {
     setIdLoading(reqId, true);
     try {
       await updateStatus({ requestId: reqId, status }).unwrap();
@@ -122,8 +122,8 @@ const ReceivedRequest: React.FC = () => {
 
   const handleOpenChat = (sender: any) => {
     const params = new URLSearchParams({
-      with: sender._id,
-      name: `${sender.first_name} ${sender.last_name}`,
+      with: String(sender._id),
+      name: `${sender.first_name ?? ""} ${sender.last_name ?? ""}`.trim(),
       ...(sender.ProfilePicture ? { avatar: sender.ProfilePicture } : {}),
     });
     navigate(`/chat?${params.toString()}`);
@@ -138,6 +138,10 @@ const ReceivedRequest: React.FC = () => {
       </div>
     );
   }
+
+  // Normalize requests response (support Post[] or { data: [...] } etc.)
+  const raw: any = data;
+  const requests: any[] = Array.isArray(raw) ? raw : raw?.data ?? raw ?? [];
 
   return (
     <div className="space-y-4">
@@ -154,14 +158,14 @@ const ReceivedRequest: React.FC = () => {
         </div>
       )}
 
-      {(!data || data.length === 0) && (
+      {(!requests || requests.length === 0) && (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <div className="text-5xl mb-3">📭</div>
           <p className="text-gray-400 text-sm">No received requests</p>
         </div>
       )}
 
-      {data?.map((req: any) => {
+      {requests.map((req: any) => {
         const sender = req.senderId;
         const isBusy = loadingIds.has(req._id);
 
@@ -190,7 +194,7 @@ const ReceivedRequest: React.FC = () => {
 
             {/* ACTIONS */}
             <div className="flex gap-2 flex-wrap items-center">
-              {sender?._id && <ViewPostButton senderId={sender._id} />}
+              {String(sender?._id) && <ViewPostButton senderId={String(sender._id)} />}
 
               {req.status === "pending" && (
                 <>
@@ -224,7 +228,7 @@ const ReceivedRequest: React.FC = () => {
                     💬 Chat
                   </button>
                   <button
-                    onClick={() => handleBlock(sender._id, req._id)}
+                    onClick={() => handleBlock(String(sender._id), req._id)}
                     disabled={isBusy}
                     className="flex items-center gap-1 text-xs text-gray-400 hover:text-red-500
                       border border-gray-200 hover:border-red-300 px-2.5 py-1.5 rounded-lg transition disabled:opacity-50"
@@ -246,7 +250,7 @@ const ReceivedRequest: React.FC = () => {
                     Blocked
                   </span>
                   <button
-                    onClick={() => handleUnblock(sender._id, req._id)}
+                    onClick={() => handleUnblock(String(sender._id), req._id)}
                     disabled={isBusy}
                     className="flex items-center gap-1 text-xs text-indigo-500 hover:text-indigo-700
                       border border-indigo-200 hover:border-indigo-400 px-2.5 py-1.5 rounded-lg
@@ -275,22 +279,19 @@ const Spinner = () => (
 
 const BlockIcon = () => (
   <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round"
-      d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
   </svg>
 );
 
 const UnblockIcon = () => (
   <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round"
-      d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
   </svg>
 );
 
 const PostIcon = () => (
   <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round"
-      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
   </svg>
 );
 

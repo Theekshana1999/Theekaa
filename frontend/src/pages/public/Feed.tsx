@@ -12,11 +12,12 @@ const EMPTY_FILTERS: FeedFilters = { district: "", ageRange: "", gender: "" };
 const Feed: React.FC = () => {
   const navigate = useNavigate();
 
-  // ✅ FIX: your endpoint expects an argument (Vercel error TS2554)
-const { data, isLoading, error } = useGetPostsQuery(undefined);
+  // call without args when your endpoint does not require one
+  const { data, isLoading, error } = useGetPostsQuery();
 
-  // support both shapes: {data:[...]} or [...]
-  const allPosts = (data?.data ?? data ?? []) as any[];
+  // normalize responses: support API returning either Post[] or { data: Post[] } or wrapper shapes
+  const raw: any = data;
+  const allPosts: any[] = Array.isArray(raw) ? raw : raw?.data ?? raw ?? [];
 
   const [likedPosts, setLikedPosts] = useState<Record<string, boolean>>({});
   const [searchQuery, setSearchQuery] = useState("");
@@ -117,15 +118,13 @@ const { data, isLoading, error } = useGetPostsQuery(undefined);
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search by name, location, occupation…"
-                className="flex-1 min-w-0 bg-transparent outline-none text-sm text-gray-700
-                  placeholder:text-gray-400 caret-fuchsia-500"
+                className="flex-1 min-w-0 bg-transparent outline-none text-sm text-gray-700 placeholder:text-gray-400 caret-fuchsia-500"
               />
               {searchQuery && (
                 <button
                   type="button"
                   onClick={() => setSearchQuery("")}
-                  className="shrink-0 p-0.5 rounded-full text-gray-400 hover:text-gray-600
-                    hover:bg-gray-200 transition-colors"
+                  className="shrink-0 p-0.5 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-200 transition-colors"
                   aria-label="Clear search"
                 >
                   <FiX size={13} />
