@@ -3,10 +3,10 @@ import type { PayloadAction } from "@reduxjs/toolkit";
 
 export interface User {
   _id: string;
-  phone: string;
-  email: string;
-  firstName: string;
-  role: string;
+  phone?: string;
+  email?: string;
+  firstName?: string;
+  role?: string;
 }
 
 interface UserAuthState {
@@ -16,7 +16,6 @@ interface UserAuthState {
   error: string | null;
 }
 
-// Get user and token from localStorage
 const getInitialState = (): UserAuthState => {
   try {
     const userData = localStorage.getItem("user");
@@ -70,6 +69,5 @@ const userAuthSlice = createSlice({
   },
 });
 
-export const { setUser, logout, setLoading, setError, clearError } =
-  userAuthSlice.actions;
+export const { setUser, logout, setLoading, setError, clearError } = userAuthSlice.actions;
 export default userAuthSlice.reducer;

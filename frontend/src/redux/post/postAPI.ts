@@ -1,21 +1,31 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { getBaseURL } from "../../utils/baseURL";
 
+export type Post = {
+  _id: string;
+  title?: string;
+  content?: string;
+  authorId?: string;
+  // add other fields your backend returns
+};
+
+type EditPostPayload =
+  | { id: string; other_details: any }
+  | { id: string; postData: any };
+
 export const postAPI = createApi({
   reducerPath: "postAPI",
   baseQuery: fetchBaseQuery({
     baseUrl: `${getBaseURL()}/api/posts`,
     prepareHeaders: (headers) => {
       const token = localStorage.getItem("token");
-      if (token) {
-        headers.set("Authorization", `Bearer ${token}`);
-      }
+      if (token) headers.set("Authorization", `Bearer ${token}`);
       return headers;
     },
   }),
   tagTypes: ["Post"],
   endpoints: (builder) => ({
-    createPost: builder.mutation<any, any>({
+    createPost: builder.mutation<Post, Partial<Post>>({
       query: (postData) => ({
         url: "/",
         method: "POST",
@@ -24,38 +34,42 @@ export const postAPI = createApi({
       invalidatesTags: ["Post"],
     }),
 
-    getPosts: builder.query<any[], void>({
+    getPosts: builder.query<Post[], void>({
       query: () => "/",
       providesTags: ["Post"],
     }),
 
-    getPostById: builder.query<any, string>({
+    getPostById: builder.query<Post, string>({
       query: (id) => `/${id}`,
       providesTags: (_result, _error, id) => [{ type: "Post" as const, id }],
     }),
 
-    getPostByUserId: builder.query<any[], string>({
+    getPostByUserId: builder.query<Post[], string>({
       query: (userId) => `/user/${userId}`,
       providesTags: (_result, _error, userId) => [{ type: "Post" as const, id: `user-${userId}` }],
     }),
 
-    // This export is intentionally kept to match your CurrentPost.tsx usage
-    getPostByUser: builder.query<any[], string>({
+    // kept for CurrentPost.tsx compatibility
+    getPostByUser: builder.query<Post[], string>({
       query: (userId) => `/user/${userId}`,
       providesTags: (_result, _error, userId) => [{ type: "Post" as const, id: `user-posts-${userId}` }],
     }),
 
-    getPostByUserIdRecent: builder.query<any[], string>({
+    getPostByUserIdRecent: builder.query<Post[], string>({
       query: (userId) => `/user-recent/${userId}`,
       providesTags: (_result, _error, userId) => [{ type: "Post" as const, id: `user-recent-${userId}` }],
     }),
 
-    editPost: builder.mutation<any, { id: string; other_details: any }>({
-      query: ({ id, other_details }) => ({
-        url: `/${id}`,
-        method: "PUT",
-        body: { other_details },
-      }),
+    editPost: builder.mutation<any, EditPostPayload>({
+      query: (payload) => {
+        const id = payload.id;
+        const body = "other_details" in payload ? { other_details: payload.other_details } : payload.postData;
+        return {
+          url: `/${id}`,
+          method: "PUT",
+          body,
+        };
+      },
       invalidatesTags: (_result, _error, { id }) => [{ type: "Post" as const, id }, "Post"],
     }),
 
@@ -76,7 +90,7 @@ export const postAPI = createApi({
       invalidatesTags: (_result, _error, { id }) => [{ type: "Post" as const, id }, "Post"],
     }),
 
-    getAllDeleteRequestedPosts: builder.query<any[], void>({
+    getAllDeleteRequestedPosts: builder.query<Post[], void>({
       query: () => "/delete-requests",
       providesTags: ["Post"],
     }),

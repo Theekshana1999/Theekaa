@@ -6,15 +6,19 @@ interface LikeResponse {
   message?: string;
 }
 
+export interface PostLikesResponse {
+  likedByUser: boolean;
+  totalLikes: number;
+  likedUsers: string[]; // adjust to { _id: string; name?: string }[] if your backend returns objects
+}
+
 export const postLikeAPI = createApi({
   reducerPath: "postLikeAPI",
   baseQuery: fetchBaseQuery({
     baseUrl: `${getBaseURL()}/api/likes`,
     prepareHeaders: (headers) => {
       const token = localStorage.getItem("token");
-      if (token) {
-        headers.set("Authorization", `Bearer ${token}`);
-      }
+      if (token) headers.set("Authorization", `Bearer ${token}`);
       return headers;
     },
   }),
@@ -25,17 +29,13 @@ export const postLikeAPI = createApi({
         url: `/like/${postId}`,
         method: "POST",
       }),
-      // invalidatesTags receives (_result, _error, arg)
       invalidatesTags: (_result, _error, postId) => [{ type: "PostLikes" as const, id: postId }],
     }),
-    getPostLikes: builder.query<string[], string>({
+    getPostLikes: builder.query<PostLikesResponse, string>({
       query: (postId) => `/likes/${postId}`,
       providesTags: (_result, _error, postId) => [{ type: "PostLikes" as const, id: postId }],
     }),
   }),
 });
 
-export const {
-  useLikePostMutation,
-  useGetPostLikesQuery,
-} = postLikeAPI;
+export const { useLikePostMutation, useGetPostLikesQuery } = postLikeAPI;

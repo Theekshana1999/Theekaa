@@ -1,21 +1,25 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { getBaseURL } from "../../utils/baseURL";
 
+type SigninCredentials = {
+  email?: string;
+  phone?: string;
+  password: string;
+};
+
 export const userAuthAPI = createApi({
   reducerPath: "userAuthAPI",
   baseQuery: fetchBaseQuery({
     baseUrl: `${getBaseURL()}/api/users`,
     prepareHeaders: (headers) => {
       const token = localStorage.getItem("token");
-      if (token) {
-        headers.set("Authorization", `Bearer ${token}`);
-      }
+      if (token) headers.set("Authorization", `Bearer ${token}`);
       return headers;
     },
   }),
   tagTypes: ["User"],
   endpoints: (builder) => ({
-    Signin: builder.mutation<any, { email: string; password: string }>({
+    Signin: builder.mutation<any, SigninCredentials>({
       query: (credentials) => ({
         url: "/sign-in",
         method: "POST",

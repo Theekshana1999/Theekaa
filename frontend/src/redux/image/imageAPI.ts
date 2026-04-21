@@ -13,9 +13,7 @@ export const imageAPI = createApi({
     baseUrl: `${getBaseURL()}/api/images`,
     prepareHeaders: (headers) => {
       const token = localStorage.getItem("token");
-      if (token) {
-        headers.set("Authorization", `Bearer ${token}`);
-      }
+      if (token) headers.set("Authorization", `Bearer ${token}`);
       return headers;
     },
   }),
