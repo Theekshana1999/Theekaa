@@ -76,10 +76,19 @@ const UpdateProfile: React.FC = () => {
       setHeight(user.height != null ? String(user.height) : "");
       setWeight(user.weight != null ? String(user.weight) : "");
       setImagePreview(user.ProfilePicture ?? null);
+
+      // Safely normalize dateOfBirth into YYYY-MM-DD (always pass string to state)
       if (user.dateOfBirth) {
-        // normalize to YYYY-MM-DD for inputs/pickers
-        const iso = new Date(String(user.dateOfBirth)).toISOString().split("T")[0];
-        setDateOfBirth(iso);
+        const rawDob = String(user.dateOfBirth);
+        const parsed = new Date(rawDob);
+        if (!isNaN(parsed.getTime())) {
+          setDateOfBirth(parsed.toISOString().slice(0, 10)); // 'YYYY-MM-DD'
+        } else {
+          // Invalid date — clear to empty string
+          setDateOfBirth("");
+        }
+      } else {
+        setDateOfBirth("");
       }
     }
   }, [user]);
